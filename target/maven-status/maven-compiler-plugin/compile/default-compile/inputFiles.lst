@@ -10,6 +10,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/ActionBarListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/PlayerListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/SoundListener.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/TagUpdateListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/TeleportListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/VanishListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/ActionBarManager.java
@@ -18,6 +19,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/GodManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/ServerConfigManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/SoundManager.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/TagManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/managers/TranslationsManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/player/PlayerManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/punishments/PunishmentReader.java

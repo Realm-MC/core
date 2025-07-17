@@ -5,6 +5,7 @@ br/com/realmmc/core/Main.class
 br/com/realmmc/core/commands/GamemodeCommand.class
 br/com/realmmc/core/utils/PlayerResolver.class
 br/com/realmmc/core/api/CoreAPI.class
+br/com/realmmc/core/managers/TagManager.class
 br/com/realmmc/core/listeners/SoundListener.class
 br/com/realmmc/core/commands/FeedCommand.class
 br/com/realmmc/core/commands/HealCommand.class
@@ -25,6 +26,7 @@ br/com/realmmc/core/commands/GodCommand.class
 br/com/realmmc/core/managers/GodManager.class
 br/com/realmmc/core/users/UserProfileReader.class
 br/com/realmmc/core/api/ResolvedPlayer$Status.class
+br/com/realmmc/core/listeners/TagUpdateListener.class
 br/com/realmmc/core/listeners/VanishListener.class
 br/com/realmmc/core/player/PlayerManager.class
 br/com/realmmc/core/managers/TranslationsManager.class
