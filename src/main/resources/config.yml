@@ -1,0 +1,15 @@
+# =================================================================================== #
+#                                                                                     #
+#                                     RealmMC - Core                                  #
+#                                 Configuração Principal                              #
+#                                                                                     #
+# =================================================================================== #
+
+# Configurações do Banco de Dados MongoDB
+database:
+  mongodb:
+    # String de conexão completa do MongoDB.
+    # Exemplo: "mongodb://user:password@localhost:27017/?authSource=admin"
+    uri: "mongodb://localhost:27017"
+    # Nome do banco de dados onde as coleções do Core serão armazenadas.
+    name: "RealmMC"

@@ -1,0 +1,344 @@
+# =================================================================================== #
+#                                                                                     #
+#                                RealmMC - Traduções pt_BR                              #
+#                  Este arquivo contém todas as mensagens do sistema.                 #
+#                                                                                     #
+# =================================================================================== #
+
+# --- MENSAGENS GERAIS ---
+general:
+  player-only: "&cEste comando só pode ser executado por um jogador."
+  no-permission: "&cVocê precisa do grupo &c{group} &cou superior para executar esse comando!"
+  no-permission-go-other: "&cO jogador &r{player} &cnão possui o grupo necessário para entrar nesse servidor!"
+  internal-error: "&cOcorreu um erro interno. Por favor, reporte para o suporte utilizando o código de referência &6[040105]."
+  invalid-player: "&cO {target} nunca entrou no servidor."
+  invalid-offline: "&cO &r{target} &cestá offline no momento."
+  invalid-id: "&cO ID fornecido não é um número válido."
+  invalid-uuid: "&cO UUID fornecido não é um uuid válido."
+  connecting-to: "&eConectando-se ao servidor {server}."
+  cooldown-active: "&cAguarde {time}s para utilizar esse comando novamente!"
+  store-url: "https://loja.realmmc.com.br"
+  server-full-chat:
+    header: "&c&lREALM MC"
+    line1: "&cO servidor {server} está lotado no momento!"
+    line2_part1: "&cAdquira "
+    line2_clickable_vip: "&6&lVIP"
+    line2_part2: " &cclicando "
+    line2_clickable_aqui: "&6&lAQUI"
+    line2_part3: "&c e receba acesso a vagas ilimitadas."
+  network-full-kick: |
+    &c&lREALM MC
+
+    &cO servidor está lotado no momento!
+    &cAdquira &6VIP &cacessando https://loja.realmmc.com.br
+    &ce receba acesso a vagas ilimitadas.
+  server-full-no-vip: |
+    &c&lREALM MC
+
+    &cO servidor está completamente lotado!
+    &cMesmo você sendo um jogador &6&lVIP &cnão teremos vagas no momento.
+# --- MENSAGENS DO PROXY ---
+proxy:
+  shutdown-kick-message: |
+    &c&lREALM MC
+
+    &eTodos os servidores de lobbies e modos de jogo foram reiniciados.
+    &eFique por dentro das novidades no Discord &e&ndiscord.gg/realmmc&e.
+# --- SISTEMA DE FAILOVER ---
+failover:
+  moved-to-lobby: "&eO servidor {server} foi reiniciado! Conectamos você ao {lobby}."
+
+# --- MENSAGENS DE LOG ---
+logs:
+  plugin:
+    enabled: "Proxy ativado com sucesso."
+    disabled: "Proxy desativado com sucesso."
+  database:
+    connection-success: "Conexão com o banco de dados MongoDB estabelecida."
+    connection-failed: "Falha ao conectar no banco de dados. O plugin será desativado."
+    connection-closed: "Conexão com o banco de dados MongoDB fechada."
+  dependencies:
+    luckperms-not-found: "Dependência 'LuckPerms' não encontrada. O plugin será desativado."
+  user-profile:
+    sync-success: "Contador de usuários sincronizado. Próximo ID será: {id}."
+    error-update: "Ocorreu um erro grave ao atualizar o UserProfile do jogador {player}."
+    error-get-version: "Não foi possível obter a versão do ViaVersion para o jogador {player}."
+    error-get-by-uuid: "Erro ao buscar usuário por UUID: {uuid}."
+    error-get-by-id: "Erro ao buscar usuário por ID: {id}."
+    error-get-by-name: "Erro ao buscar usuário por nome: {name}."
+  find-command:
+    luckperms-unavailable: "API do LuckPerms indisponível. Informações de grupo e prefixo não serão exibidas."
+    unexpected-error: "Erro inesperado ao executar /find para {target}."
+  player-manager:
+    error-format-nickname: "Ocorreu um erro ao formatar o nickname de {player}."
+  servers:
+    loaded: "{count} configurações de servidor carregadas do banco de dados."
+    load-error: "Ocorreu um erro ao carregar as configurações dos servidores."
+    created-default: "Coleção 'servers' não encontrada/vazia. Criando configuração padrão para o servidor 'lobby'."
+
+# --- COMANDOS ---
+staff-command:
+  header: "&f{count} {plural} online no momento:"
+  plural:
+    singular: "staffer"
+    plural: "staffers"
+  empty: "  &cNão há nenhum staffer online no momento."
+  line-format: "  &f- {staff_info}"
+
+find-command:
+  usage: "&cUtilize: /find <usuário>"
+  info:
+    ip-hidden: "&c[Sem permissão]"
+    none: "&7Nenhum"
+    unknown: "&7Desconhecido"
+  section-user: "{status_color}Usuário"
+  section-groups: "{status_color}Grupo"
+  section-status: "{status_color}Status"
+  line:
+    id: "&f  ID: &7{value}"
+    uuid: "&f  UUID: &7{value}"
+    nickname: "&f  Nickname: &7{value}"
+    first-login: "&f  Primeiro login: &7{value}"
+    first-ip: "&f  Primeiro IP: &7{value}"
+    last-login: "&f  Último login: &7{value}"
+    last-ip: "&f  Último IP: &7{value}"
+    groups: "&f  Grupos: {value}"
+    prefix: "&f  Prefixo: {value}"
+    proxy: "&f  Proxy: &7{value}"
+    server: "&f  Servidor: &7{value}"
+    version: "&f  Versão: &7{value}"
+    last-version: "&f  Última versão: &7{value}"
+
+btp-command:
+  usage-moderator: "&cUtilize: /btp <usuário>"
+  usage-admin: "&cUtilize: /btp <usuário> [usuário]"
+  cant-teleport-self: "&cVocê não pode se teleportar para si mesmo."
+  already-on-same-server: "&cVocê já está no mesmo servidor que o &r{target}&c."
+  already-on-same-server-other: "&cO &r{player} &cjá está no mesmo servidor que &r{target}&c."
+  already-on-same-server-pull: "&cO &r{player} &cjá está no mesmo servidor que você."
+  teleporting-self: "&eTeleportando para &r{target}&e."
+  teleporting-other: "&eTeleportando &r{player} &epara &r{target}&e."
+  pulling-player: "&ePuxando &r{player} &eaté você."
+
+btphere-command:
+  usage-administrator: "&cUtilize: /btphere <usuário>"
+  cant-pull-self: "&cVocê não pode puxar a si mesmo."
+
+server-command:
+  status: "&eVocê está conectado no servidor {server}."
+  list-header: "&eLista de servidores disponíveis: "
+  list-separator: "&e, "
+  hover:
+    offline: "&cEsse servidor está offline no momento."
+    no-players: "&7Não há nenhum jogador conectado a esse servidor."
+    online-single: "&7Há 1 jogador conectado a esse servidor."
+    online-plural: "&7Há {count} jogadores conectados a esse servidor."
+    click-to-connect: "&7Utilize o clique esquerdo para se conectar!"
+
+go-command:
+  usage-player: "&cUtilize: /go <servidor>."
+  usage-admin: "&cUtilize: /go <servidor>:[usuário]"
+  not-found-error: "&cO servidor {server} não foi encontrado!"
+  not-found-list-header: "&aLista de servidores disponíveis: "
+  offline: "&cO servidor {server} está offline no momento."
+  already-on-server: "&cO &r{player} &cjá está conectado ao servidor {server}."
+  already-on-this-server: "&cVocê já está conectado neste servidor."
+  teleport-success: "&aVocê teleportou o &r{player} &apara o servidor {server}."
+
+sconfig-command:
+  usage:
+    header: "&6Comandos de Configuração de Servidor:"
+    add: "&e/sconfig add <nome-interno> <nome-de-exibicao>"
+    remove: "&e/sconfig remove <nome-interno>"
+    setperm: "&e/sconfig setperm <nome-interno> [permissao]"
+    setmax: "&e/sconfig setmax <nome-interno> <limite>"
+    list: "&e/sconfig list"
+    reload: "&e/sconfig reload"
+  add:
+    success: "&aServidor '{server}' com o nome de exibição '{displayname}' adicionado com sucesso."
+    already-exists: "&cO servidor '{server}' já está configurado."
+  remove:
+    success: "&aServidor '{server}' removido da configuração com sucesso."
+  setperm:
+    success: "&aPermissão '{permission}' definida para o servidor '{server}'."
+    removed: "&aPermissão do servidor '{server}' removida com sucesso."
+  setmax:
+    success: "&aLimite de jogadores do servidor '{server}' definido para {limit} com sucesso."
+    invalid-number: "&cO limite fornecido não é um número válido e positivo."
+  list:
+    header: "&6Servidores Configurados:"
+    format: "&7- &fID: &e{id} &f| Nome: &e{displayname} &f| Permissão: &e{permission} &f| Limite: &e{max_players}"
+  reload:
+    success: "&aConfiguração de servidores recarregada do banco de dados."
+  not-found: "&cO servidor '{server}' não foi encontrado na configuração."
+
+tell-command:
+  reply-no-target: "&cVocê não tem ninguém para responder."
+  reply-target-offline: "&cO {target} ficou offline e você não tem mais ninguém para responder."
+  format-sender: "&8Mensagem para &r{target}&8: "
+  format-receiver: "&8Mensagem de &r{sender}&8: "
+  hover-reply: "&7Utilize o clique esquerdo para responder ao &r{player}&7!"
+  usage-tell: "&cUtilize: /tell <jogador> <mensagem>."
+  usage-reply: "&cUtilize: /r <mensagem>."
+  duplicate-message: "&cVocê não pode enviar a mesma mensagem duas vezes seguidas."
+  similar-message: "&cEssa mensagem é muito parecida com a anterior."
+
+# --- SISTEMA DE CHAT GLOBAL ---
+staff-chat:
+  usage: "&cUtilize: /s <mensagem>"
+  format: "&d[Staff] &r{sender}&d: &f{message}"
+
+partner-chat:
+  usage: "&cUtilize: /yt <mensagem>"
+  format: "&c[Parceiro] &r{sender}&c: &f{message}"
+
+# --- CHAT GLOBAL COM "!" ---
+global-chat:
+  format: "&r{sender}&f: &f{message}"
+
+# --- SISTEMA DE PUNIÇÕES ---
+punishments:
+  ban-kick-permanent: |
+    &c&lREALM MC
+
+    &cVocê está banido permanentemente do servidor.
+    &f
+    &cMotivo: {reason}
+    &cAutor: {author}
+    &cProva: {proof}
+
+    &cUse o ID &e#{id} &cpara criar uma revisão em &c&ndiscord.gg/realmmc&c.
+  ban-kick-temporary: |
+    &c&lREALM MC
+
+    &cVocê está banido até {time} do servidor.
+    &f
+    &cMotivo: {reason}
+    &cAutor: {author}
+    &cProva: {proof}
+
+    &cUse o ID &e#{id} &cpara criar uma revisão em &c&ndiscord.gg/realmmc&c.
+  mute-message-permanent: |
+    &c Você está silenciado permanentemente do servidor.
+    &f
+    &c Motivo: {reason}
+    &c Autor: {author}
+    &c Prova: {proof}
+    &c
+    &cUse o ID &e#{id} &cpara criar uma revisão em &c&ndiscord.gg/realmmc&c.
+  mute-message-temporary: |
+    &c Você está silenciado até {time} do servidor.
+    &f
+    &c Motivo: {reason}
+    &c Autor: {author}
+    &c Prova: {proof}
+    &c
+    &c Use o ID &e#{id} &cpara criar uma revisão em &c&ndiscord.gg/realmmc&c.
+  punish:
+    usage-player: "&cUtilize: /punir <usuário>."
+    proof-required: "&cVocê precisa fornecer um link como prova para aplicar essa punição."
+    no-reasons-available: "&cNão há motivos de punição disponíveis para você aplicar."
+    list-header: "&aSelecione abaixo o motivo da punição:"
+    list-format: "&7 - &f{reason}"
+    list-hover: |
+      &6Tipo: &7{type}
+      &6Motivo: &7{name}
+      &6Duração: &7{time}
+      &6Cargo mínimo: &7{permission}
+    reason-not-found: "&cO motivo com ID '{id}' não existe."
+    no-permission-for-reason: "&cVocê não tem o cargo necessário para aplicar uma punição com o motivo '{reason_name}'."
+    already-punished: "&cO &r{nick} &cjá tem uma punição ativa com esse mesmo motivo."
+    success-feedback: "&ePunição aplicada com sucesso ao &r{target}&e!"
+    invalid-proof-link: "&cA prova precisa ser um link válido começando com 'http://' ou 'https://'."
+
+  manual:
+    usage: "&cUtilize: /{command} <usuário> <duração> <motivo> [prova]"
+
+  check:
+    usage: "&cUtilize: /checkpunir <usuário>"
+    header: "&aPunições de {player}"
+    no-history: "&cO jogador {player} &cnão possui punições em seu histórico."
+    legend: "&a◼ Ativo &c◼ Expirada &7◼ Revogada"
+    hover-details:
+      base: |
+        &fID: &e{id}
+        &fData: &e{date}
+        &fAutor: &e{author}
+        &fDuração: &e{time}
+        &fMotivo: &e{reason}
+        &fProva: &e{proof}
+        &fTipo: &e{type}
+      revoked: |
+        &fRevogada por: &e{revoker}
+        &fMotivo: &e{reason}
+        &fData: &e{date}
+  revoke:
+    usage: "&cUtilize: /revoke <id da punição> <motivo>"
+    invalid-id: "&cO ID fornecido não é um número válido."
+    not-found: "&cA punição com ID #{id} não foi encontrada."
+    already-inactive: "&cEsta punição já está inativa (expirada ou revogada)."
+    no-permission: "&cVocê não tem permissão para revogar esta punição. Apenas administradores ou o autor original (dentro de 24h) podem fazê-lo."
+    broadcast: "&c[Punição] A punição de {target} &cfoi revogada por {revoker}&c."
+
+  types:
+    ban: "Banimento"
+    tempban: "Banimento temporário"
+    mute: "Silenciamento"
+    tempmute: "Silenciamento temporário"
+  broadcast-format: |
+    &cO &r{target} &cfoi punido por &r{author}&c.
+    &cMotivo: {reason} - {duration} 
+    &cProva: {proof}
+  notification:
+    expired: |
+      &f
+      &e A sua punição de {type} expirou e agora você já pode voltar a interagir novamente dentro do servidor!
+      &e Fique por dentro das regras para evitar ser punido novamente! A próxima vez a punição poderá ser mais severa.
+      &f
+    revoked: |
+      &f
+      &a A sua punição de {type} foi revogada.
+      &a Lamentamos profundamente o erro na aplicação e ficamos muito felizes em ter você dentro do servidor!
+actionbar:
+  separator: " &8|&r "
+gui:
+  server-selector:
+    title: "Seletor de Servidores"
+  lobby-selector:
+    title: "Seletor de Lobbies"
+# Adicione esta nova seção completa ao seu arquivo de traduções
+
+# --- COMANDOS DE MODERAÇÃO (CORE) ---
+moderation:
+  # /god
+  god:
+    enabled: "&aModo Deus ativado."
+    disabled: "&cModo Deus desativado."
+  # /gamemode
+  gamemode:
+    usage-admin: "&cUse: /gamemode <modo>."
+    usage-manager: "&cUse: /gamemode <modo> [usuário]."
+    invalid: "&cModo de jogo inválido. Use: survival, creative, adventure, spectator."
+    success-self: "&aSeu modo de jogo foi alterado para {gamemode}."
+    success-other: "&aVocê alterou o modo de jogo de &r{player} &apara {gamemode}."
+  # /heal
+  heal:
+    success-self: "&aVocê curou a sua vida."
+    success-other: "&aVocê curou o jogador &r{player}&a."
+    success-target: "&aA sua vida foi curada."
+  # /feed
+  feed:
+    success-self: "&aVocê saciou sua fome."
+    success-other: "&aVocê saciou a fome de &r{player}&a."
+    success-target: "&aA sua fome foi saciada."
+  # /tp e /tphere
+  teleport:
+    usage: "&cUse: /tp <usuário>."
+    usage-admin: "&cUse: /tp <usuário> [usuário]."
+    usage-here: "&cUse: /tphere <usuário>."
+    teleport-self: "&cVocê não pode teleportar até si mesmo."
+    teleport-here-self: "&cVocê não pode puxar a si mesmo."
+    teleport-same: "&cOs dois jogadores não podem ser o mesmo."
+    success-self: "&aVocê se teleportou para &r{player}&a."
+    success-other: "&aVocê teleportou &r{player} &apara &r{target}&a."
+    success-here: "&aVocê puxou &r{player} &aaté você."

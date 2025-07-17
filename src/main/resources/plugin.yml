@@ -1,0 +1,26 @@
+name: core
+version: '1.0.0'
+main: br.com.realmmc.core.Main
+authors: [xxxlc]
+website: www.realmmc.com.br
+depend: [LuckPerms, ViaVersion]
+
+commands:
+  feed:
+    description: Utilizado para curar a sua fome, ou a de outros jogadores.
+    aliases: [feed, fome]
+  gamemode:
+    description: Utilizado para alterar o seu modo de jogo, ou o de outros jogadores.
+    aliases: [gamemode, gm]
+  god:
+    description: Utilizado para ativar ou desativar completamente a sua invulnerabilidade.
+    aliases: [god]
+  heal:
+    description: Utilizado para curar a sua vida, ou a de outros jogadores.
+    aliases: [heal, curar]
+  tp:
+    description: Utilizado para se teleportar a um jogador, ou teleportar outros jogadores.
+    aliases: [tp, teleport]
+  tphere:
+    description: Utilizado para puxar algum jogador até você.
+    aliases: [tphere, teleporthere]
