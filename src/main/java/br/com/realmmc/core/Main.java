@@ -17,12 +17,14 @@ import br.com.realmmc.core.users.UserPreferenceManager;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import net.luckperms.api.LuckPerms;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public final class Main extends JavaPlugin {
@@ -40,6 +42,8 @@ public final class Main extends JavaPlugin {
     private ServerConfigManager serverConfigManager;
     private PunishmentReader punishmentReader;
     private GodManager godManager;
+    private TagManager tagManager;
+
     private String serverName;
 
     @Override
@@ -80,6 +84,7 @@ public final class Main extends JavaPlugin {
         this.delayManager = new DelayManager(this);
         this.punishmentReader = new PunishmentReader(this);
         this.godManager = new GodManager();
+        this.tagManager = new TagManager(this);
 
         new CoreAPI(this);
 
@@ -106,25 +111,31 @@ public final class Main extends JavaPlugin {
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(vanishListener, this);
         pm.registerEvents(this.godManager, this);
+        new TagUpdateListener(this);
 
         // Comandos
-        getCommand("god").setExecutor(new GodCommand(this.godManager));
+        Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
+
         GamemodeCommand gamemodeCommand = new GamemodeCommand();
-        getCommand("gamemode").setExecutor(gamemodeCommand);
-        getCommand("gamemode").setTabCompleter(gamemodeCommand);
+        PluginCommand gamemode = Objects.requireNonNull(getCommand("gamemode"));
+        gamemode.setExecutor(gamemodeCommand);
+        gamemode.setTabCompleter(gamemodeCommand);
+
         HealCommand healCommand = new HealCommand();
-        getCommand("heal").setExecutor(healCommand);
-        getCommand("heal").setTabCompleter(healCommand);
+        Objects.requireNonNull(getCommand("heal")).setExecutor(healCommand);
+        Objects.requireNonNull(getCommand("heal")).setTabCompleter(healCommand);
 
         FeedCommand feedCommand = new FeedCommand();
-        getCommand("feed").setExecutor(feedCommand);
-        getCommand("feed").setTabCompleter(feedCommand);
+        Objects.requireNonNull(getCommand("feed")).setExecutor(feedCommand);
+        Objects.requireNonNull(getCommand("feed")).setTabCompleter(feedCommand);
+
         TeleportCommand teleportCommand = new TeleportCommand();
-        getCommand("teleport").setExecutor(teleportCommand);
-        getCommand("teleport").setTabCompleter(teleportCommand);
+        Objects.requireNonNull(getCommand("teleport")).setExecutor(teleportCommand);
+        Objects.requireNonNull(getCommand("teleport")).setTabCompleter(teleportCommand);
+
         TeleportHereCommand teleportHereCommand = new TeleportHereCommand();
-        getCommand("teleporthere").setExecutor(teleportHereCommand);
-        getCommand("teleporthere").setTabCompleter(teleportHereCommand);
+        Objects.requireNonNull(getCommand("teleporthere")).setExecutor(teleportHereCommand);
+        Objects.requireNonNull(getCommand("teleporthere")).setTabCompleter(teleportHereCommand);
 
         // Canais de Mensagens
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
@@ -168,4 +179,5 @@ public final class Main extends JavaPlugin {
     public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
     public PunishmentReader getPunishmentReader() { return this.punishmentReader; }
     public GodManager getGodManager() { return godManager; }
+    public TagManager getTagManager() { return tagManager; }
 }

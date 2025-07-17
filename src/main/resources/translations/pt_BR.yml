@@ -342,3 +342,7 @@ moderation:
     success-self: "&aVocê se teleportou para &r{player}&a."
     success-other: "&aVocê teleportou &r{player} &apara &r{target}&a."
     success-here: "&aVocê puxou &r{player} &aaté você."
+lobby:
+  build:
+    enabled: "&aModo de construção ativado. Você agora pode interagir com o mundo."
+    disabled: "&cModo de construção desativado. Suas permissões foram restauradas."
