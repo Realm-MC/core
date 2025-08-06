@@ -5,7 +5,7 @@ import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.ColorAPI;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.FileConfiguration; // ADICIONADO
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -23,6 +23,7 @@ public class TranslationsManager {
     private final Main plugin;
     private final Logger logger;
     private final Map<String, String> messages = new HashMap<>();
+    private FileConfiguration langConfig; // ADICIONADO: Campo para armazenar a config
     private final String defaultLocale = "pt_BR";
     private final String logPrefix = "[Core] ";
 
@@ -38,7 +39,9 @@ public class TranslationsManager {
             plugin.saveResource("translations/" + defaultLocale + ".yml", false);
         }
 
-        FileConfiguration langConfig = YamlConfiguration.loadConfiguration(langFile);
+        // ALTERADO: Carregamos a configuração para o campo da classe
+        this.langConfig = YamlConfiguration.loadConfiguration(langFile);
+
         Reader defaultConfigStream = new InputStreamReader(plugin.getResource("translations/" + defaultLocale + ".yml"), StandardCharsets.UTF_8);
         YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(defaultConfigStream);
         langConfig.setDefaults(defaultConfig);
@@ -58,7 +61,14 @@ public class TranslationsManager {
         }
     }
 
-    // --- MÉTODO ADICIONADO PARA CORRIGIR O ERRO ---
+    /**
+     * ADICIONADO: Método getter para expor o objeto de configuração.
+     * @return A instância do FileConfiguration das traduções.
+     */
+    public FileConfiguration getConfig() {
+        return this.langConfig;
+    }
+
     public void sendNoPermissionMessage(CommandSender sender, String requiredGroup) {
         sendMessage(sender, "general.no-permission", "group", requiredGroup);
         if (sender instanceof Player) {
@@ -85,6 +95,8 @@ public class TranslationsManager {
     public void log(Level level, String key, String... replacements) {
         logger.log(level, logPrefix + getRawMessage(key, replacements));
     }
+
+
 
     public void log(Level level, String key, Throwable throwable, String... replacements) {
         logger.log(level, logPrefix + getRawMessage(key, replacements), throwable);

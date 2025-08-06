@@ -77,20 +77,18 @@ public class TeleportCommand implements CommandExecutor, TabCompleter {
 
             player.teleport(target.getLocation());
             CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.success-self", "player", resolvedTarget.getFormattedName());
-            CoreAPI.getInstance().getSoundManager().playSuccess(player);
+            CoreAPI.getInstance().getSoundManager().playTeleport(player); // Som para quem se teleportou
         });
     }
 
     private void handleTeleportOther(CommandSender sender, String toMoveName, String targetName) {
         resolver.resolve(sender, toMoveName, resolvedToMove -> {
             resolver.resolve(sender, targetName, resolvedTarget -> {
-                // --- CORREÇÃO: Lógica para /tp eu <alvo> ---
                 if (sender instanceof Player player && player.getUniqueId().equals(resolvedToMove.getUuid())) {
                     handleTeleport(player, targetName);
                     return;
                 }
 
-                // --- CORREÇÃO: Lógica para /tp <alvo> eu ---
                 if (sender instanceof Player player && player.getUniqueId().equals(resolvedTarget.getUuid())) {
                     handleTeleportHere(player, resolvedToMove);
                     return;
@@ -113,8 +111,13 @@ public class TeleportCommand implements CommandExecutor, TabCompleter {
                 }
 
                 toMove.teleport(target.getLocation());
+                // --- SOM ADICIONADO PARA O JOGADOR QUE FOI MOVIDO ---
+                CoreAPI.getInstance().getSoundManager().playTeleport(toMove);
+
                 CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "moderation.teleport.success-other", "player", resolvedToMove.getFormattedName(), "target", resolvedTarget.getFormattedName());
-                CoreAPI.getInstance().getSoundManager().playSuccess(sender instanceof Player ? (Player) sender : null);
+                if (sender instanceof Player) {
+                    CoreAPI.getInstance().getSoundManager().playSuccess((Player) sender);
+                }
             });
         });
     }
@@ -127,6 +130,9 @@ public class TeleportCommand implements CommandExecutor, TabCompleter {
         }
         Player target = targetToPull.getOnlinePlayer().get();
         target.teleport(sender.getLocation());
+        // --- SOM ADICIONADO PARA O JOGADOR QUE FOI PUXADO ---
+        CoreAPI.getInstance().getSoundManager().playTeleport(target);
+
         CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "moderation.teleport.success-here", "player", targetToPull.getFormattedName());
         CoreAPI.getInstance().getSoundManager().playSuccess(sender);
     }

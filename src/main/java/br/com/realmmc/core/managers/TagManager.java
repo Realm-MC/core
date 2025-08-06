@@ -1,125 +1,102 @@
+// PASTA: core/src/main/java/br/com/realmmc/core/managers/TagManager.java
 package br.com.realmmc.core.managers;
 
 import br.com.realmmc.core.Main;
+import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.ColorAPI;
 import net.luckperms.api.LuckPerms;
-import net.luckperms.api.model.group.Group;
-import net.luckperms.api.model.user.User;
+import net.luckperms.api.event.EventBus;
+import net.luckperms.api.event.user.track.UserPromoteEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-
-import java.util.Objects;
-import java.util.Optional;
 
 public class TagManager {
 
     private final Main plugin;
     private final LuckPerms luckPerms;
-    private final Scoreboard mainScoreboard;
 
     public TagManager(Main plugin) {
         this.plugin = plugin;
         this.luckPerms = plugin.getLuckPerms();
-        this.mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        initializeTeams();
     }
 
-    /**
-     * Carrega todos os grupos do LuckPerms e cria/atualiza os times na scoreboard na inicialização.
-     */
-    private void initializeTeams() {
-        luckPerms.getGroupManager().loadAllGroups().thenAcceptAsync(v -> {
-            plugin.getLogger().info("Sincronizando grupos do LuckPerms com os times da scoreboard...");
-            for (Group group : luckPerms.getGroupManager().getLoadedGroups()) {
-                updateTeamFromGroup(group);
-            }
-            // Garante que todos os jogadores online tenham suas tags atualizadas após a sincronização
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    updatePlayerTag(player);
+    public void start() {
+        Bukkit.getPluginManager().registerEvents(new TagListener(), plugin);
+
+        EventBus eventBus = luckPerms.getEventBus();
+        eventBus.subscribe(plugin, UserPromoteEvent.class, this::onUserRankChange);
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            updatePlayerTag(player);
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, this::updateAllPlayerViews, 5L);
+    }
+
+    public void updatePlayerTag(Player targetPlayer) {
+        if (!targetPlayer.isOnline()) return;
+
+        // --- LÓGICA REATORADA ---
+        // Busca o RealmPlayer do cache
+        CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(targetPlayer).ifPresent(realmPlayer -> {
+            // Usa os dados já carregados do RealmPlayer
+            int weight = realmPlayer.getGroupWeight();
+            String prefix = realmPlayer.getPrefix();
+            String groupName = realmPlayer.getPrimaryGroup(); // Usado para nome do time
+
+            // O nome do time é formatado para garantir a ordem correta no TAB
+            String teamName = String.format("%04d_%s", 9999 - weight, groupName.replaceAll("§.", ""));
+
+            // Itera sobre todos os jogadores online (os "espectadores")
+            for (Player viewer : Bukkit.getOnlinePlayers()) {
+                Scoreboard viewerScoreboard = viewer.getScoreboard();
+                Team team = viewerScoreboard.getTeam(teamName);
+
+                if (team == null) {
+                    team = viewerScoreboard.registerNewTeam(teamName);
                 }
-            });
+
+                if (prefix != null) {
+                    team.setPrefix(ColorAPI.format(prefix + ""));
+                    String lastColors = ChatColor.getLastColors(ColorAPI.format(prefix));
+                    if (!lastColors.isEmpty()) {
+                        ChatColor nameColor = ChatColor.getByChar(lastColors.charAt(1));
+                        if (nameColor != null && nameColor.isColor()) {
+                            team.setColor(nameColor);
+                        }
+                    }
+                }
+
+                // Adiciona o jogador-alvo ao time na scoreboard do espectador
+                team.addEntry(targetPlayer.getName());
+            }
         });
     }
 
-    /**
-     * Cria ou atualiza um time na scoreboard baseado em um grupo do LuckPerms.
-     * @param group O grupo do LuckPerms.
-     */
-    public void updateTeamFromGroup(Group group) {
-        String teamName = getTeamName(group);
-        Team team = mainScoreboard.getTeam(teamName);
-        if (team == null) {
-            team = mainScoreboard.registerNewTeam(teamName);
+    private void updateAllPlayerViews() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            updatePlayerTag(player);
         }
-
-        String prefix = group.getCachedData().getMetaData().getPrefix();
-        if (prefix != null) {
-            team.setPrefix(ColorAPI.format(prefix + ""));
-        }
-
-        ChatColor teamColor = getFirstColor(prefix);
-        team.setColor(teamColor);
     }
 
-    /**
-     * Atualiza a tag (time da scoreboard) de um jogador específico.
-     * Chamado no login do jogador ou quando seu grupo muda.
-     */
-    public void updatePlayerTag(Player player) {
-        User user = luckPerms.getUserManager().getUser(player.getUniqueId());
-        if (user == null) return;
-
-        // Encontra o grupo primário do jogador
-        Group primaryGroup = luckPerms.getGroupManager().getGroup(user.getPrimaryGroup());
-        if (primaryGroup == null) return;
-
-        String teamName = getTeamName(primaryGroup);
-        Team team = mainScoreboard.getTeam(teamName);
-
-        // Se o time não existir por algum motivo, tenta criá-lo na hora
-        if (team == null) {
-            updateTeamFromGroup(primaryGroup);
-            team = mainScoreboard.getTeam(teamName);
-            if (team == null) {
-                plugin.getLogger().warning("Não foi possível criar ou encontrar o time para o grupo: " + primaryGroup.getName());
-                return;
-            }
+    private void onUserRankChange(UserPromoteEvent event) {
+        Player player = Bukkit.getPlayer(event.getUser().getUniqueId());
+        if (player != null && player.isOnline()) {
+            // Um delay é importante para garantir que o cache do RealmPlayer seja atualizado primeiro
+            Bukkit.getScheduler().runTaskLater(plugin, () -> updatePlayerTag(player), 20L);
         }
-
-        // Adiciona o jogador ao time, atualizando sua tag no TAB e no nametag
-        team.addEntry(player.getName());
-        player.setDisplayName(team.getPrefix() + team.getColor() + player.getName());
     }
 
-    /**
-     * Cria um nome de time único e ordenável a partir do peso do grupo.
-     * Ex: Grupo 'master' com peso 100 -> "0100-master"
-     * O TAB ordena alfabeticamente, então pesos menores (ranks mais altos) vêm primeiro.
-     */
-    private String getTeamName(Group group) {
-        int weight = group.getWeight().orElse(0);
-        // Invertemos o peso para que ranks mais altos (maior peso) tenham um prefixo menor
-        String formattedWeight = String.format("%04d", 9999 - weight);
-        return formattedWeight + "_" + group.getName();
-    }
-
-    /**
-     * Extrai a primeira cor de um prefixo para usar como cor do nome do jogador.
-     */
-    private ChatColor getFirstColor(String prefix) {
-        if (prefix == null || prefix.isEmpty()) return ChatColor.WHITE;
-
-        int legacyIndex = prefix.lastIndexOf('&');
-        if (legacyIndex != -1 && legacyIndex + 1 < prefix.length()) {
-            ChatColor color = ChatColor.getByChar(prefix.charAt(legacyIndex + 1));
-            if (color != null && color.isColor()) {
-                return color;
-            }
+    private class TagListener implements Listener {
+        @EventHandler
+        public void onPlayerJoin(PlayerJoinEvent event) {
+            // Atualiza a tag de todos para todos, garantindo sincronia total com o novo jogador.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> updateAllPlayerViews(), 10L);
         }
-        return ChatColor.WHITE;
     }
 }

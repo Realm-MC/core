@@ -2,7 +2,6 @@ package br.com.realmmc.core.listeners;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,27 +20,24 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        event.setJoinMessage(null); // Remove a mensagem de entrada padrão do Minecraft
+        event.setJoinMessage(null);
 
-        // Define o estado inicial do jogador no lobby
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setHealth(20.0);
-        player.setFoodLevel(20);
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
 
-        // Garante que o perfil de preferências seja criado
-        CoreAPI.getInstance().getUserPreferenceManager().ensurePreferenceProfile(player);
+        // A LINHA QUE CAUSAVA O ERRO FOI REMOVIDA DAQUI
+        // A criação do perfil de preferências é responsabilidade do Proxy.
 
-        // Atualiza a tag do jogador (prefixo/cor no TAB e nametag)
-        CoreAPI.getInstance().getTagManager().updatePlayerTag(player);
+        if (!CoreAPI.getInstance().getModuleManager().isClaimed(br.com.realmmc.core.modules.SystemType.TAGS)) {
+            CoreAPI.getInstance().getTagManager().updatePlayerTag(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        event.setQuitMessage(null); // Remove a mensagem de saída padrão
+        event.setQuitMessage(null);
 
-        // A limpeza do GodMode é feita pelo próprio GodManager, que é um Listener.
-        // Limpamos apenas os cooldowns aqui.
-        CoreAPI.getInstance().getDelayManager().clearCooldowns(player.getUniqueId());
+        CoreAPI.getInstance().getDelayManager().clearDelays(player.getUniqueId());
+        CoreAPI.getInstance().getCooldownManager().cancelOnQuit(player);
     }
 }
