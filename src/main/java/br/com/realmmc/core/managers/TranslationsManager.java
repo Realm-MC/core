@@ -1,11 +1,13 @@
 package br.com.realmmc.core.managers;
 
 import br.com.realmmc.core.Main;
+import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.ColorAPI;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.FileConfiguration; // ADICIONADO
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.InputStreamReader;
@@ -20,15 +22,14 @@ public class TranslationsManager {
 
     private final Main plugin;
     private final Logger logger;
-    private final SoundManager soundManager; // Adicionado para sons de erro
     private final Map<String, String> messages = new HashMap<>();
+    private FileConfiguration langConfig; // ADICIONADO: Campo para armazenar a config
     private final String defaultLocale = "pt_BR";
     private final String logPrefix = "[Core] ";
 
     public TranslationsManager(Main plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
-        this.soundManager = new SoundManager(); // Instanciado para uso interno
         loadMessages();
     }
 
@@ -38,7 +39,9 @@ public class TranslationsManager {
             plugin.saveResource("translations/" + defaultLocale + ".yml", false);
         }
 
-        FileConfiguration langConfig = YamlConfiguration.loadConfiguration(langFile);
+        // ALTERADO: Carregamos a configuração para o campo da classe
+        this.langConfig = YamlConfiguration.loadConfiguration(langFile);
+
         Reader defaultConfigStream = new InputStreamReader(plugin.getResource("translations/" + defaultLocale + ".yml"), StandardCharsets.UTF_8);
         YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(defaultConfigStream);
         langConfig.setDefaults(defaultConfig);
@@ -58,11 +61,18 @@ public class TranslationsManager {
         }
     }
 
-    // --- NOVO MÉTODO ADICIONADO ---
-    public void sendNoPermissionMessage(CommandSender sender, String requiredPermission) {
-        sendMessage(sender, "general.no-permission", "group", requiredPermission);
-        if (sender instanceof org.bukkit.entity.Player) {
-            soundManager.playError((org.bukkit.entity.Player) sender);
+    /**
+     * ADICIONADO: Método getter para expor o objeto de configuração.
+     * @return A instância do FileConfiguration das traduções.
+     */
+    public FileConfiguration getConfig() {
+        return this.langConfig;
+    }
+
+    public void sendNoPermissionMessage(CommandSender sender, String requiredGroup) {
+        sendMessage(sender, "general.no-permission", "group", requiredGroup);
+        if (sender instanceof Player) {
+            CoreAPI.getInstance().getSoundManager().playError((Player) sender);
         }
     }
 
@@ -85,6 +95,8 @@ public class TranslationsManager {
     public void log(Level level, String key, String... replacements) {
         logger.log(level, logPrefix + getRawMessage(key, replacements));
     }
+
+
 
     public void log(Level level, String key, Throwable throwable, String... replacements) {
         logger.log(level, logPrefix + getRawMessage(key, replacements), throwable);

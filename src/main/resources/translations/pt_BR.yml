@@ -17,6 +17,11 @@ general:
   invalid-uuid: "&cO UUID fornecido não é um uuid válido."
   connecting-to: "&eConectando-se ao servidor {server}."
   cooldown-active: "&cAguarde {time}s para utilizar esse comando novamente!"
+  cooldown-active-message: "&cAguarde {time}s para enviar outra mensagem!"
+  delay-command-message: "&cAguarde {time}s para utilizar esse comando novamente!"
+  delay-private-message: "&cAguarde {time}s para enviar outra mensagem!"
+  cooldown-active-teleport: "&eTeleportando em {time}s... Não se mova!"
+  cooldown-cancelled-teleport: "&cTeleporte cancelado, você se moveu!"
   store-url: "https://loja.realmmc.com.br"
   server-full-chat:
     header: "&c&lREALM MC"
@@ -306,6 +311,11 @@ gui:
     title: "Seletor de Servidores"
   lobby-selector:
     title: "Seletor de Lobbies"
+  pagination:
+    previous-page-name: "&aPágina Anterior"
+    previous-page-lore: "&7Clique para voltar para a página anterior."
+    next-page-name: "&aPróxima Página"
+    next-page-lore: "&7Clique para avançar para a próxima página."
 # Adicione esta nova seção completa ao seu arquivo de traduções
 
 # --- COMANDOS DE MODERAÇÃO (CORE) ---
@@ -342,3 +352,42 @@ moderation:
     success-self: "&aVocê se teleportou para &r{player}&a."
     success-other: "&aVocê teleportou &r{player} &apara &r{target}&a."
     success-here: "&aVocê puxou &r{player} &aaté você."
+lobby:
+  build:
+    enabled: "&aModo de construção ativado."
+    disabled: "&cModo de construção desativado."
+  spawn:
+    not-set: "&cO local do spawn ainda não foi definido por um administrador."
+    teleporting: "&eTeleportando para o Spawn."
+    success-other: "&eVocê teleportou &r{player} &epara o spawn."
+    teleport-self: "&cVocê não pode se teleportar para si mesmo!"
+  setspawn:
+    success: "&aSpawn principal do lobby definido com sucesso!"
+    limbo1_success: "&aPosição 1 da área de proteção (limbo) definida com sucesso!"
+    limbo2_success: "&aPosição 2 da área de proteção (limbo) definida com sucesso!"
+    invalid-arg: "&cArgumento inválido. Use: /setspawn ou /setspawn limbo:1 ou /setspawn limbo:2"
+
+scoreboard:
+  title: "&5&lREALM MC"
+  lines:
+    group: "&fGrupo: &r{group}"
+    rankup_online: "&fRankUP: &a{online}"
+    rankup_offline: "&fRankUP: &cEm manutenção"
+    network_online: "&fOnline: &a{online}"
+    cash: "&fCash: &6{cash}"
+  site: "&5realmmc.com.br"
+
+chat:
+  format: "&r{player}&f: &r{message}"
+  duplicate-message: "&cVocê não pode enviar a mesma mensagem duas vezes seguidas."
+  similar-message: "&cEssa mensagem é muito parecida com a anterior."
+  # Novo formato de chat padrão
+  default-format:
+    part1:
+      text: "{player_name}"
+      hover: "" # Vazio, como você pediu
+      suggest: "/tell {player_plain_name} "
+    part2:
+      text: "&f: &r{message}"
+
+# Adicione esta seção ao final do seu arquivo de tradução do Core

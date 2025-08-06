@@ -1,6 +1,7 @@
+// PASTA: core/src/main/java/br/com/realmmc/core/managers/DelayManager.java
 package br.com.realmmc.core.managers;
 
-import br.com.realmmc.core.Main;
+import br.com.realmmc.core.api.CoreAPI;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -9,80 +10,68 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Gerencia os cooldowns para comandos, prevenindo o uso excessivo.
- * Versão para o plugin Core (Spigot/Paper).
+ * Gerencia o DELAY (tempo de espera) entre a utilização de comandos.
  */
 public class DelayManager {
 
-    private final TranslationsManager translations;
-    private final SoundManager soundManager;
-    private final Map<String, Map<UUID, Long>> cooldowns;
+    private final Map<String, Map<UUID, Long>> delays = new ConcurrentHashMap<>();
+    private static final String DEFAULT_MESSAGE_KEY = "general.delay-command-message"; // Mensagem padrão para comandos
 
-    public DelayManager(Main plugin) {
-        this.translations = plugin.getTranslationsManager();
-        this.soundManager = plugin.getSoundManager();
-        this.cooldowns = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * Define um cooldown para um jogador em um comando específico.
-     * A duração é determinada pelas permissões do jogador.
-     *
-     * @param player O jogador a receber o cooldown.
-     * @param commandKey A chave única do comando (ex: "home", "kit").
-     */
-    public void setCooldown(Player player, String commandKey) {
-        // As permissões são globais via LuckPerms, então podemos usar as mesmas.
-        if (player.hasPermission("proxy.moderador")) {
+    public void setDelay(Player player, String key, long seconds) {
+        if (player.hasPermission("proxy.champion")) {
             return;
         }
-
-        long durationInSeconds = player.hasPermission("proxy.champion") ? 3L : 5L;
-        long expirationTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(durationInSeconds);
-
-        cooldowns.computeIfAbsent(commandKey, k -> new ConcurrentHashMap<>()).put(player.getUniqueId(), expirationTime);
+        long expirationTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(seconds);
+        delays.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).put(player.getUniqueId(), expirationTime);
     }
 
     /**
-     * Verifica se um jogador está em cooldown para um comando específico.
-     * Se estiver, envia uma mensagem de erro e retorna true.
-     *
-     * @param player O jogador a ser verificado.
-     * @param commandKey A chave única do comando.
-     * @return true se o jogador estiver em cooldown, false caso contrário.
+     * Verifica o delay usando uma chave de mensagem específica.
+     * @param player O jogador.
+     * @param key A chave da ação.
+     * @param messageKey A chave da mensagem no arquivo de tradução.
+     * @return true se estiver em delay, false caso contrário.
      */
-    public boolean isCoolingDown(Player player, String commandKey) {
-        if (player.hasPermission("proxy.moderador")) {
+    public boolean hasDelay(Player player, String key, String messageKey) {
+        if (player.hasPermission("proxy.champion")) {
             return false;
         }
 
-        Map<UUID, Long> commandCooldowns = cooldowns.get(commandKey);
-        if (commandCooldowns == null || !commandCooldowns.containsKey(player.getUniqueId())) {
+        Map<UUID, Long> commandDelays = delays.get(key);
+        if (commandDelays == null || !commandDelays.containsKey(player.getUniqueId())) {
             return false;
         }
 
-        long expirationTime = commandCooldowns.get(player.getUniqueId());
+        long expirationTime = commandDelays.get(player.getUniqueId());
 
         if (System.currentTimeMillis() < expirationTime) {
             long remainingMillis = expirationTime - System.currentTimeMillis();
             long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) + 1;
 
-            translations.sendMessage(player, "general.cooldown-active", "time", String.valueOf(remainingSeconds));
-            soundManager.playError(player); // Adaptado para o SoundManager do Core
+            String message = CoreAPI.getInstance().getTranslationsManager().getRawMessage(
+                    messageKey, "time", String.valueOf(remainingSeconds)
+            );
+
+            CoreAPI.getInstance().getActionBarManager().setMessage(player, ActionBarManager.MessagePriority.HIGH, "delay_" + key, message, 2);
+            CoreAPI.getInstance().getSoundManager().playError(player);
+
             return true;
         }
 
-        commandCooldowns.remove(player.getUniqueId());
+        commandDelays.remove(player.getUniqueId());
         return false;
     }
 
     /**
-     * Limpa todos os cooldowns de um jogador ao desconectar.
-     * @param uuid O UUID do jogador.
+     * Verifica o delay usando a mensagem padrão para comandos.
      */
-    public void clearCooldowns(UUID uuid) {
-        for (Map<UUID, Long> commandCooldowns : cooldowns.values()) {
-            commandCooldowns.remove(uuid);
+    public boolean hasDelay(Player player, String key) {
+        return hasDelay(player, key, DEFAULT_MESSAGE_KEY);
+    }
+
+    public void clearDelays(UUID uuid) {
+        for (Map<UUID, Long> commandDelays : delays.values()) {
+            commandDelays.remove(uuid);
         }
     }
 }

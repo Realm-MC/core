@@ -1,28 +1,30 @@
 package br.com.realmmc.core;
 
 import br.com.realmmc.core.api.CoreAPI;
-import br.com.realmmc.core.commands.FeedCommand;
-import br.com.realmmc.core.commands.GamemodeCommand;
-import br.com.realmmc.core.commands.GodCommand;
-import br.com.realmmc.core.commands.HealCommand;
-import br.com.realmmc.core.commands.TeleportCommand;
-import br.com.realmmc.core.commands.TeleportHereCommand;
+import br.com.realmmc.core.commands.*;
+import br.com.realmmc.core.gui.GuiManager;
+import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
-import br.com.realmmc.core.managers.GodManager;
+import br.com.realmmc.core.modules.ModuleManager;
+import br.com.realmmc.core.modules.SystemType;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
+import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
 import br.com.realmmc.core.users.UserProfileReader;
-import br.com.realmmc.core.users.UserPreferenceManager;
+import br.com.realmmc.core.users.UserPreferenceReader;
+import br.com.realmmc.core.users.UserPreferenceManager; // 1. ADICIONADO
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import net.luckperms.api.LuckPerms;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public final class Main extends JavaPlugin {
@@ -32,20 +34,27 @@ public final class Main extends JavaPlugin {
     private DatabaseManager databaseManager;
     private TranslationsManager translationsManager;
     private UserProfileReader userProfileReader;
-    private UserPreferenceManager userPreferenceManager;
+    private UserPreferenceReader userPreferenceReader;
+    private UserPreferenceManager userPreferenceManager; // 2. ADICIONADO
     private PlayerManager playerManager;
+    private PlayerDataManager playerDataManager;
     private SoundManager soundManager;
     private ActionBarManager actionBarManager;
+    private CooldownManager cooldownManager;
     private DelayManager delayManager;
+    private SpamManager spamManager;
     private ServerConfigManager serverConfigManager;
     private PunishmentReader punishmentReader;
     private GodManager godManager;
+    private TagManager tagManager;
+    private GuiManager guiManager;
+    private ModuleManager moduleManager;
+    private HologramManager hologramManager;
     private String serverName;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-
         try {
             this.serverName = new File(".").getCanonicalFile().getName();
         } catch (IOException e) {
@@ -54,7 +63,7 @@ public final class Main extends JavaPlugin {
         }
 
         this.translationsManager = new TranslationsManager(this);
-
+        this.soundManager = new SoundManager();
         try {
             this.databaseManager = new DatabaseManager(this);
         } catch (Exception e) {
@@ -73,23 +82,37 @@ public final class Main extends JavaPlugin {
 
         this.serverConfigManager = new ServerConfigManager(this);
         this.userProfileReader = new UserProfileReader(this);
-        this.userPreferenceManager = new UserPreferenceManager(this);
+        this.userPreferenceReader = new UserPreferenceReader(this);
+        this.userPreferenceManager = new UserPreferenceManager(this); // 3. ADICIONADO
         this.playerManager = new PlayerManager(this);
-        this.soundManager = new SoundManager();
+        this.playerDataManager = new PlayerDataManager(this);
         this.actionBarManager = new ActionBarManager(this);
-        this.delayManager = new DelayManager(this);
+        this.cooldownManager = new CooldownManager(this);
+        this.delayManager = new DelayManager();
+        this.spamManager = new SpamManager(this.delayManager, this.translationsManager);
         this.punishmentReader = new PunishmentReader(this);
         this.godManager = new GodManager();
+        this.tagManager = new TagManager(this);
+        this.guiManager = new GuiManager(this);
+        this.moduleManager = new ModuleManager(this);
+        this.hologramManager = new HologramManager(this);
 
         new CoreAPI(this);
 
         registerComponents();
+        activateDefaultModules();
+
+        this.hologramManager.loadHolograms();
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
     @Override
     public void onDisable() {
+        if (this.hologramManager != null) {
+            this.hologramManager.saveHolograms();
+            this.hologramManager.despawnAll();
+        }
         if (databaseManager != null) {
             databaseManager.close();
         }
@@ -98,41 +121,57 @@ public final class Main extends JavaPlugin {
         this.translationsManager.log(Level.INFO, "logs.plugin.disabled");
     }
 
+    private void activateDefaultModules() {
+        getServer().getScheduler().runTaskLater(this, () -> {
+            getLogger().info("Verificando módulos padrão do Core para ativação...");
+
+            if (!moduleManager.isClaimed(SystemType.SCOREBOARD)) {
+                getLogger().info("Nenhum plugin de Scoreboard customizado detectado. Ativando scoreboard padrão do Core.");
+                new DefaultScoreboardManager(this).start();
+            }
+            if (!moduleManager.isClaimed(SystemType.CHAT)) {
+                getLogger().info("Nenhum plugin de Chat customizado detectado. Ativando listener de chat padrão do Core.");
+                getServer().getPluginManager().registerEvents(new DefaultChatListener(), this);
+            }
+            if (!moduleManager.isClaimed(SystemType.TAGS)) {
+                getLogger().info("Nenhum plugin de Tags customizado detectado. Ativando TagManager padrão do Core.");
+                tagManager.start();
+            }
+        }, 20L);
+    }
+
     private void registerComponents() {
         PluginManager pm = getServer().getPluginManager();
 
-        // Listeners
         VanishListener vanishListener = new VanishListener(this);
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(vanishListener, this);
         pm.registerEvents(this.godManager, this);
 
-        // Comandos
-        getCommand("god").setExecutor(new GodCommand(this.godManager));
+        Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand();
-        getCommand("gamemode").setExecutor(gamemodeCommand);
-        getCommand("gamemode").setTabCompleter(gamemodeCommand);
+        PluginCommand gamemode = Objects.requireNonNull(getCommand("gamemode"));
+        gamemode.setExecutor(gamemodeCommand);
+        gamemode.setTabCompleter(gamemodeCommand);
         HealCommand healCommand = new HealCommand();
-        getCommand("heal").setExecutor(healCommand);
-        getCommand("heal").setTabCompleter(healCommand);
-
+        Objects.requireNonNull(getCommand("heal")).setExecutor(healCommand);
+        Objects.requireNonNull(getCommand("heal")).setTabCompleter(healCommand);
         FeedCommand feedCommand = new FeedCommand();
-        getCommand("feed").setExecutor(feedCommand);
-        getCommand("feed").setTabCompleter(feedCommand);
+        Objects.requireNonNull(getCommand("feed")).setExecutor(feedCommand);
+        Objects.requireNonNull(getCommand("feed")).setTabCompleter(feedCommand);
         TeleportCommand teleportCommand = new TeleportCommand();
-        getCommand("teleport").setExecutor(teleportCommand);
-        getCommand("teleport").setTabCompleter(teleportCommand);
+        Objects.requireNonNull(getCommand("tp")).setExecutor(teleportCommand);
+        Objects.requireNonNull(getCommand("tp")).setTabCompleter(teleportCommand);
         TeleportHereCommand teleportHereCommand = new TeleportHereCommand();
-        getCommand("teleporthere").setExecutor(teleportHereCommand);
-        getCommand("teleporthere").setTabCompleter(teleportHereCommand);
+        Objects.requireNonNull(getCommand("tphere")).setExecutor(teleportHereCommand);
+        Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
 
-        // Canais de Mensagens
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:actionbar", new ActionBarListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:vanish", vanishListener);
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sync", vanishListener);
-
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:preference_update", new PreferenceUpdateListener());
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
@@ -153,19 +192,27 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    // Getters
+    // --- GETTERS ---
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public TranslationsManager getTranslationsManager() { return translationsManager; }
     public UserProfileReader getUserProfileReader() { return userProfileReader; }
-    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; }
+    public UserPreferenceReader getUserPreferenceReader() { return userPreferenceReader; }
+    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; } // 4. ADICIONADO
     public PlayerManager getPlayerManager() { return playerManager; }
+    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
     public SoundManager getSoundManager() { return soundManager; }
     public ActionBarManager getActionBarManager() { return actionBarManager; }
+    public CooldownManager getCooldownManager() { return cooldownManager; }
     public DelayManager getDelayManager() { return delayManager; }
+    public SpamManager getSpamManager() { return spamManager; }
     public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
     public PunishmentReader getPunishmentReader() { return this.punishmentReader; }
     public GodManager getGodManager() { return godManager; }
+    public TagManager getTagManager() { return tagManager; }
+    public GuiManager getGuiManager() { return guiManager; }
+    public ModuleManager getModuleManager() { return moduleManager; }
+    public HologramManager getHologramManager() { return hologramManager; }
 }

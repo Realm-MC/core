@@ -50,6 +50,9 @@ public class TeleportHereCommand implements CommandExecutor, TabCompleter {
             }
 
             target.teleport(player.getLocation());
+            // --- SOM ADICIONADO PARA O JOGADOR QUE FOI PUXADO ---
+            CoreAPI.getInstance().getSoundManager().playTeleport(target);
+
             CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.success-here", "player", resolvedPlayer.getFormattedName());
             CoreAPI.getInstance().getSoundManager().playSuccess(player);
         });
