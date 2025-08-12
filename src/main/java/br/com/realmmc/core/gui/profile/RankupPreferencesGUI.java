@@ -31,7 +31,6 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
     @Override
     public void setupItems() {
         setupHeader();
-
         ItemStack separatorPane = createItem(
                 Material.BLACK_STAINED_GLASS_PANE,
                 translations.getMessage("gui.rankup-preferences.separator-item.name"),
@@ -40,9 +39,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         for (int i = 9; i <= 17; i++) {
             setItem(i, separatorPane);
         }
-
         fetchAndBuild();
-
         setItem(49, createBackItem());
     }
 
@@ -55,37 +52,46 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
 
         CompletableFuture.allOf(coinsFuture, confirmFuture, alertFuture).thenRun(() -> {
             player.getServer().getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
-                buildDynamicItems(coinsFuture.join(), confirmFuture.join(), alertFuture.join());
+                boolean hasPermission = player.hasPermission("core.champion");
+                buildDynamicItems(coinsFuture.join(), confirmFuture.join(), alertFuture.join(), hasPermission);
             });
         });
     }
 
-    private void buildDynamicItems(boolean canReceiveCoins, boolean hasConfirm, boolean hasAlert) {
-        setItem(19, createCoinsReceiptItem(canReceiveCoins));
-        setItem(28, createToggleItem(canReceiveCoins, "CoinsReceipt"));
+    private void buildDynamicItems(boolean canReceiveCoins, boolean hasConfirm, boolean hasAlert, boolean hasPermission) {
+        setItem(19, createCoinsReceiptItem(canReceiveCoins, hasPermission));
+        setItem(28, createToggleItem(canReceiveCoins, "CoinsReceipt", hasPermission));
 
-        setItem(20, createRankupConfirmItem(hasConfirm));
-        setItem(29, createToggleItem(hasConfirm, "RankupConfirmation"));
+        setItem(20, createRankupConfirmItem(hasConfirm, hasPermission));
+        setItem(29, createToggleItem(hasConfirm, "RankupConfirmation", hasPermission));
 
         setItem(21, createRankupAlertItem(hasAlert));
         setItem(30, createRankupAlertToggleItem(hasAlert));
     }
 
-    private GuiItem createCoinsReceiptItem(boolean isEnabled) {
+    private GuiItem createCoinsReceiptItem(boolean isEnabled, boolean hasPermission) {
         String nameColor = isEnabled ? "&a" : "&c";
         String name = nameColor + translations.getRawMessage("gui.rankup-preferences.coins-receipt-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.coins-receipt-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+        if (!hasPermission) {
+            lore.add("");
+            lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
+        }
         return new GuiItem(createItem(Material.GOLD_INGOT, name, lore));
     }
 
-    private GuiItem createRankupConfirmItem(boolean isEnabled) {
+    private GuiItem createRankupConfirmItem(boolean isEnabled, boolean hasPermission) {
         String nameColor = isEnabled ? "&a" : "&c";
         String name = nameColor + translations.getRawMessage("gui.rankup-preferences.rankup-confirm-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.rankup-confirm-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+        if (!hasPermission) {
+            lore.add("");
+            lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
+        }
         return new GuiItem(createItem(Material.EMERALD, name, lore));
     }
 
@@ -97,11 +103,17 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         return new GuiItem(createItem(Material.BELL, name, lore));
     }
 
-    private GuiItem createToggleItem(boolean isEnabled, String preferenceName) {
+    private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
-        return new GuiItem(createItem(material, name, lore), event -> sendTogglePreferenceMessage(preferenceName, !isEnabled));
+        return new GuiItem(createItem(material, name, lore), event -> {
+            if (!hasPermission) {
+                CoreAPI.getInstance().getSoundManager().playError(player);
+                return;
+            }
+            sendTogglePreferenceMessage(preferenceName, !isEnabled);
+        });
     }
 
     private GuiItem createRankupAlertToggleItem(boolean isChatMode) {
@@ -122,7 +134,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         switch (preferenceName.toLowerCase()) {
             case "coinsreceipt" -> messageKey = newState ? "toggle.coins-receipt.enabled" : "toggle.coins-receipt.disabled";
             case "rankupconfirmation" -> messageKey = newState ? "toggle.rankup-confirm.enabled" : "toggle.rankup-confirm.disabled";
-            case "rankupalert" -> messageKey = newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled"; // 'newState' aqui será true para Chat, false para Actionbar
+            case "rankupalert" -> messageKey = newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled";
         }
 
         if (!messageKey.isEmpty()) {

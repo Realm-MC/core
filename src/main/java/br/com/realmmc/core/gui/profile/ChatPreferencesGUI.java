@@ -44,32 +44,40 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
     private void fetchAndBuild() {
         CoreAPI.getInstance().getUserPreferenceReader().canReceiveTell(player.getUniqueId()).thenAccept(isEnabled -> {
             player.getServer().getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
-                buildDynamicItems(isEnabled);
+                boolean hasPermission = player.hasPermission("core.champion");
+                buildDynamicItems(isEnabled, hasPermission);
             });
         });
     }
 
-    private void buildDynamicItems(boolean canReceiveTell) {
-        setItem(19, createTellItem(canReceiveTell));
-        setItem(28, createTellToggleItem(canReceiveTell));
+    private void buildDynamicItems(boolean canReceiveTell, boolean hasPermission) {
+        setItem(19, createTellItem(canReceiveTell, hasPermission));
+        setItem(28, createTellToggleItem(canReceiveTell, hasPermission));
     }
 
-    private GuiItem createTellItem(boolean isEnabled) {
+    private GuiItem createTellItem(boolean isEnabled, boolean hasPermission) {
         String nameColor = isEnabled ? "&a" : "&c";
         String name = nameColor + translations.getRawMessage("gui.chat-preferences.tell-item.name");
         List<String> lore = getLoreFromConfig("gui.chat-preferences.tell-item.lore");
         String status = translations.getMessage("gui.chat-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
         lore.add(translations.getMessage("gui.chat-preferences.tell-item.status-line", "status", status));
-        Material material = Material.OAK_SIGN;
-        return new GuiItem(createItem(material, name, lore));
+        if (!hasPermission) {
+            lore.add("");
+            lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
+        }
+        return new GuiItem(createItem(Material.OAK_SIGN, name, lore));
     }
 
-    private GuiItem createTellToggleItem(boolean isEnabled) {
+    private GuiItem createTellToggleItem(boolean isEnabled, boolean hasPermission) {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.chat-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
 
         return new GuiItem(createItem(material, name, lore), event -> {
+            if (!hasPermission) {
+                CoreAPI.getInstance().getSoundManager().playError(player);
+                return;
+            }
             sendTogglePreferenceMessage("PlayerTell", !isEnabled);
         });
     }

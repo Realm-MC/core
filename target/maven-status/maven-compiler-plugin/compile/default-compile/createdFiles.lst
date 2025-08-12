@@ -34,6 +34,7 @@ br/com/realmmc/core/managers/SoundManager.class
 br/com/realmmc/core/api/ResolvedPlayer.class
 br/com/realmmc/core/player/RealmPlayer.class
 br/com/realmmc/core/utils/InteractiveChatFormatter.class
+br/com/realmmc/core/gui/profile/PrivacyPreferencesGUI.class
 br/com/realmmc/core/gui/profile/ChatPreferencesGUI.class
 br/com/realmmc/core/managers/CooldownManager.class
 br/com/realmmc/core/users/UserPreferenceManager.class

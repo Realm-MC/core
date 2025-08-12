@@ -363,13 +363,14 @@ gui:
       name: "&7↑ Navegação"
       lore:
         - "&7↓ Perfil"
-
   preferences:
     title: "Perfil / Preferências"
     separator-item:
       name: "&7↑ Navegação"
       lore:
         - "&7↓ Preferências"
+    toggle:
+      permission-required: "&cVocê precisa do grupo &3Campeão &cou superior para alterar."
     lobby-prefs-item:
       name: "&aPreferências do Lobby"
       lore:
@@ -448,7 +449,6 @@ gui:
       lore:
         - "&7Clique para retornar ao menu"
         - "&7anterior de preferências."
-
   lobby-preferences:
     title: "Perfil / Preferências / Lobby"
     separator-item:
@@ -497,13 +497,23 @@ gui:
       lore:
         - "&7Clique para retornar ao menu"
         - "&7anterior de preferências."
-
   survival-preferences:
     title: "Perfil / Preferências / Survival"
     separator-item:
       name: "&7↑ Navegação"
       lore:
         - "&7↓ Preferências do Survival"
+    back-item:
+      name: "&aVoltar"
+      lore:
+        - "&7Clique para retornar ao menu"
+        - "&7anterior de preferências."
+  privacy-preferences:
+    title: "Perfil / Preferências / Privacidade"
+    separator-item:
+      name: "&7↑ Navegação"
+      lore:
+        - "&7↓ Preferências de Privacidade"
     back-item:
       name: "&aVoltar"
       lore:

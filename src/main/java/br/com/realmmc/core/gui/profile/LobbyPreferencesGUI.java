@@ -2,7 +2,6 @@ package br.com.realmmc.core.gui.profile;
 
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
-import br.com.realmmc.core.users.UserPreferenceManager;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Material;
@@ -43,35 +42,42 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
     }
 
     private void fetchAndBuild() {
-
         CoreAPI.getInstance().getUserPreferenceManager().hasLobbyProtection(player.getUniqueId()).thenAccept(isEnabled -> {
             player.getServer().getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
-                buildDynamicItems(isEnabled);
+                boolean hasPermission = player.hasPermission("core.champion");
+                buildDynamicItems(isEnabled, hasPermission);
             });
         });
     }
 
-    private void buildDynamicItems(boolean lobbyProtectionEnabled) {
-        setItem(19, createLobbyProtectionItem(lobbyProtectionEnabled));
-        setItem(28, createLobbyProtectionToggleItem(lobbyProtectionEnabled));
+    private void buildDynamicItems(boolean lobbyProtectionEnabled, boolean hasPermission) {
+        setItem(19, createLobbyProtectionItem(lobbyProtectionEnabled, hasPermission));
+        setItem(28, createLobbyProtectionToggleItem(lobbyProtectionEnabled, hasPermission));
     }
 
-    private GuiItem createLobbyProtectionItem(boolean isEnabled) {
+    private GuiItem createLobbyProtectionItem(boolean isEnabled, boolean hasPermission) {
         String nameColor = isEnabled ? "&a" : "&c";
         String name = nameColor + translations.getRawMessage("gui.lobby-preferences.lobby-protection-item.name");
         List<String> lore = getLoreFromConfig("gui.lobby-preferences.lobby-protection-item.lore");
         String status = translations.getMessage("gui.lobby-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
         lore.add(translations.getMessage("gui.lobby-preferences.lobby-protection-item.status-line", "status", status));
-        Material material = Material.IRON_DOOR;
-        return new GuiItem(createItem(material, name, lore));
+        if (!hasPermission) {
+            lore.add("");
+            lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
+        }
+        return new GuiItem(createItem(Material.IRON_DOOR, name, lore));
     }
 
-    private GuiItem createLobbyProtectionToggleItem(boolean isEnabled) {
+    private GuiItem createLobbyProtectionToggleItem(boolean isEnabled, boolean hasPermission) {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.lobby-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
 
         return new GuiItem(createItem(material, name, lore), event -> {
+            if (!hasPermission) {
+                CoreAPI.getInstance().getSoundManager().playError(player);
+                return;
+            }
             sendTogglePreferenceMessage("LobbyProtection", !isEnabled);
         });
     }

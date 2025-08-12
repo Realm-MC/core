@@ -84,7 +84,10 @@ public class PreferencesGUI extends BaseProfileMenuGUI {
     private GuiItem createPrivacyPrefsItem() {
         String name = translations.getMessage("gui.preferences.privacy-prefs-item.name");
         List<String> lore = getLoreFromConfig("gui.preferences.privacy-prefs-item.lore");
-        return new GuiItem(createItem(Material.GOLD_NUGGET, name, lore), event -> showComingSoon());
+        return new GuiItem(createItem(Material.GOLD_NUGGET, name, lore), event -> {
+            CoreAPI.getInstance().getSoundManager().playClick(player);
+            new PrivacyPreferencesGUI(player).open();
+        });
     }
 
     private GuiItem createBackItem() {
