@@ -8,12 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/**
- * Classe utilitária para criar mensagens de texto interativas (JSON) de forma fluente.
- * Suporta eventos de clique e hover, usando a API de chat do BungeeCord.
- *
- * @author Gemini & xxxlc (Versão Refatorada 2.0)
- */
 public final class JsonMessage {
 
     private final ComponentBuilder builder;

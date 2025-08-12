@@ -3,6 +3,7 @@ version: '1.0.0'
 main: br.com.realmmc.core.Main
 authors: [xxxlc]
 website: www.realmmc.com.br
+api-version: '1.21'
 depend: [LuckPerms, ViaVersion]
 
 commands:
@@ -24,3 +25,6 @@ commands:
   tphere:
     description: Utilizado para puxar algum jogador até você.
     aliases: [tphere, teleporthere]
+  profile:
+    description: Utilizado para abrir o menu do perfil.
+    aliases: [perfil]

@@ -1,4 +1,3 @@
-// PASTA: core/src/main/java/br/com/realmmc/core/users/UserPreferenceManager.java
 package br.com.realmmc.core.users;
 
 import br.com.realmmc.core.Main;
@@ -37,6 +36,10 @@ public class UserPreferenceManager {
         });
     }
 
+    /**
+     * Verifica se o jogador pode receber mensagens privadas.
+     * Espelha o método em UserPreferenceReader para uso interno do Core.
+     */
     public CompletableFuture<Boolean> canReceiveTell(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Document doc = preferencesCollection.find(Filters.eq("uuid", uuid.toString())).first();
@@ -45,10 +48,8 @@ public class UserPreferenceManager {
     }
 
     /**
-     * --- MÉTODO CORRIGIDO ---
-     * Renomeado de isOneClickLobbyEnabled para hasLobbyProtection.
-     * Lógica atualizada para usar a nova chave "lobby_protection_status".
-     * O valor padrão agora é 'false' (proteção desativada).
+     * Verifica se a proteção de /lobby do jogador está ativa.
+     * Espelha o método em UserPreferenceReader para uso interno do Core.
      */
     public CompletableFuture<Boolean> hasLobbyProtection(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {

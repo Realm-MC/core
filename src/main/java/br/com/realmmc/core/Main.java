@@ -12,8 +12,9 @@ import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
 import br.com.realmmc.core.users.UserProfileReader;
+import br.com.realmmc.core.users.UserPreferenceManager;
 import br.com.realmmc.core.users.UserPreferenceReader;
-import br.com.realmmc.core.users.UserPreferenceManager; // 1. ADICIONADO
+import br.com.realmmc.core.utils.PlayerResolver;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import net.luckperms.api.LuckPerms;
@@ -35,7 +36,7 @@ public final class Main extends JavaPlugin {
     private TranslationsManager translationsManager;
     private UserProfileReader userProfileReader;
     private UserPreferenceReader userPreferenceReader;
-    private UserPreferenceManager userPreferenceManager; // 2. ADICIONADO
+    private UserPreferenceManager userPreferenceManager;
     private PlayerManager playerManager;
     private PlayerDataManager playerDataManager;
     private SoundManager soundManager;
@@ -50,6 +51,7 @@ public final class Main extends JavaPlugin {
     private GuiManager guiManager;
     private ModuleManager moduleManager;
     private HologramManager hologramManager;
+    private PlayerResolver playerResolver;
     private String serverName;
 
     @Override
@@ -83,7 +85,7 @@ public final class Main extends JavaPlugin {
         this.serverConfigManager = new ServerConfigManager(this);
         this.userProfileReader = new UserProfileReader(this);
         this.userPreferenceReader = new UserPreferenceReader(this);
-        this.userPreferenceManager = new UserPreferenceManager(this); // 3. ADICIONADO
+        this.userPreferenceManager = new UserPreferenceManager(this);
         this.playerManager = new PlayerManager(this);
         this.playerDataManager = new PlayerDataManager(this);
         this.actionBarManager = new ActionBarManager(this);
@@ -96,6 +98,7 @@ public final class Main extends JavaPlugin {
         this.guiManager = new GuiManager(this);
         this.moduleManager = new ModuleManager(this);
         this.hologramManager = new HologramManager(this);
+        this.playerResolver = new PlayerResolver();
 
         new CoreAPI(this);
 
@@ -165,6 +168,7 @@ public final class Main extends JavaPlugin {
         TeleportHereCommand teleportHereCommand = new TeleportHereCommand();
         Objects.requireNonNull(getCommand("tphere")).setExecutor(teleportHereCommand);
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
+        Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
@@ -172,9 +176,13 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:vanish", vanishListener);
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sync", vanishListener);
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:preference_update", new PreferenceUpdateListener());
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:opengui", new OpenGuiListener(this));
+
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:broadcast", new TitleBroadcastListener(this));
     }
 
     private boolean setupLuckPerms() {
@@ -192,7 +200,6 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    // --- GETTERS ---
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
@@ -200,7 +207,7 @@ public final class Main extends JavaPlugin {
     public TranslationsManager getTranslationsManager() { return translationsManager; }
     public UserProfileReader getUserProfileReader() { return userProfileReader; }
     public UserPreferenceReader getUserPreferenceReader() { return userPreferenceReader; }
-    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; } // 4. ADICIONADO
+    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; }
     public PlayerManager getPlayerManager() { return playerManager; }
     public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
     public SoundManager getSoundManager() { return soundManager; }
@@ -215,4 +222,5 @@ public final class Main extends JavaPlugin {
     public GuiManager getGuiManager() { return guiManager; }
     public ModuleManager getModuleManager() { return moduleManager; }
     public HologramManager getHologramManager() { return hologramManager; }
+    public PlayerResolver getPlayerResolver() { return playerResolver; }
 }

@@ -8,12 +8,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Classe utilitária para formatação de cores em strings.
- * Suporta códigos de cor legados (&) e códigos de cor HEX (&#RRGGBB).
- *
- * @author Gemini & xxxlc (Versão 2.0)
- */
 public final class ColorAPI {
 
     // Padrão para encontrar códigos de cor no formato &#RRGGBB

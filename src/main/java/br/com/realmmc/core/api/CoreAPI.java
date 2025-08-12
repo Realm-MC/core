@@ -9,7 +9,8 @@ import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.users.UserProfileReader;
 import br.com.realmmc.core.users.UserPreferenceReader;
-import br.com.realmmc.core.users.UserPreferenceManager; // 1. ADICIONADO
+import br.com.realmmc.core.users.UserPreferenceManager;
+import br.com.realmmc.core.utils.PlayerResolver;
 
 public class CoreAPI {
 
@@ -26,7 +27,7 @@ public class CoreAPI {
     private final DatabaseManager databaseManager;
     private final UserProfileReader userProfileReader;
     private final UserPreferenceReader userPreferenceReader;
-    private final UserPreferenceManager userPreferenceManager; // 2. ADICIONADO
+    private final UserPreferenceManager userPreferenceManager;
     private final CooldownManager cooldownManager;
     private final DelayManager delayManager;
     private final SpamManager spamManager;
@@ -35,6 +36,7 @@ public class CoreAPI {
     private final PunishmentReader punishmentReader;
     private final ServerConfigManager serverConfigManager;
     private final HologramManager hologramManager;
+    private final PlayerResolver playerResolver;
 
     public CoreAPI(Main main) {
         instance = this;
@@ -49,7 +51,7 @@ public class CoreAPI {
         this.databaseManager = main.getDatabaseManager();
         this.userProfileReader = main.getUserProfileReader();
         this.userPreferenceReader = main.getUserPreferenceReader();
-        this.userPreferenceManager = main.getUserPreferenceManager(); // 3. ADICIONADO
+        this.userPreferenceManager = main.getUserPreferenceManager();
         this.cooldownManager = main.getCooldownManager();
         this.delayManager = main.getDelayManager();
         this.spamManager = main.getSpamManager();
@@ -58,6 +60,7 @@ public class CoreAPI {
         this.punishmentReader = main.getPunishmentReader();
         this.serverConfigManager = main.getServerConfigManager();
         this.hologramManager = main.getHologramManager();
+        this.playerResolver = main.getPlayerResolver();
     }
 
     public static CoreAPI getInstance() {
@@ -75,7 +78,7 @@ public class CoreAPI {
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public UserProfileReader getUserProfileReader() { return userProfileReader; }
     public UserPreferenceReader getUserPreferenceReader() { return userPreferenceReader; }
-    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; } // 4. ADICIONADO
+    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; }
     public CooldownManager getCooldownManager() { return cooldownManager; }
     public DelayManager getDelayManager() { return delayManager; }
     public SpamManager getSpamManager() { return spamManager; }
@@ -84,4 +87,5 @@ public class CoreAPI {
     public PunishmentReader getPunishmentReader() { return punishmentReader; }
     public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
     public HologramManager getHologramManager() { return hologramManager; }
+    public PlayerResolver getPlayerResolver() { return playerResolver; }
 }
