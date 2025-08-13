@@ -608,3 +608,6 @@ scoreboard:
     network_online: "&fOnline: &a{online}"
     cash: "&fCash: &6{cash}"
   site: "&5realmmc.com.br"
+
+maintenance:
+  lockdown-message: "&cO servidor está iniciando uma manutenção. Ações estão temporariamente bloqueadas."

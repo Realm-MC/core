@@ -52,6 +52,7 @@ public final class Main extends JavaPlugin {
     private ModuleManager moduleManager;
     private HologramManager hologramManager;
     private PlayerResolver playerResolver;
+    private MaintenanceLockdownManager maintenanceLockdownManager;
     private String serverName;
 
     @Override
@@ -99,6 +100,7 @@ public final class Main extends JavaPlugin {
         this.moduleManager = new ModuleManager(this);
         this.hologramManager = new HologramManager(this);
         this.playerResolver = new PlayerResolver();
+        this.maintenanceLockdownManager = new MaintenanceLockdownManager(this);
 
         new CoreAPI(this);
 
@@ -112,6 +114,9 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.maintenanceLockdownManager != null) {
+            this.maintenanceLockdownManager.stopActionBarTask();
+        }
         if (this.hologramManager != null) {
             this.hologramManager.saveHolograms();
             this.hologramManager.despawnAll();
@@ -147,9 +152,11 @@ public final class Main extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
 
         VanishListener vanishListener = new VanishListener(this);
+        MaintenanceLockdownListener maintenanceListener = new MaintenanceLockdownListener(this);
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(vanishListener, this);
         pm.registerEvents(this.godManager, this);
+        pm.registerEvents(maintenanceListener, this);
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand();
@@ -177,12 +184,13 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sync", vanishListener);
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:preference_update", new PreferenceUpdateListener());
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:opengui", new OpenGuiListener(this));
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:broadcast", new TitleBroadcastListener(this));
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:maintenance", maintenanceListener);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
-        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:broadcast", new TitleBroadcastListener(this));
     }
 
     private boolean setupLuckPerms() {
@@ -223,4 +231,5 @@ public final class Main extends JavaPlugin {
     public ModuleManager getModuleManager() { return moduleManager; }
     public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
+    public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
 }
