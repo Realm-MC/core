@@ -24,9 +24,6 @@ public class PlayerListener implements Listener {
 
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
 
-        // A LINHA QUE CAUSAVA O ERRO FOI REMOVIDA DAQUI
-        // A criação do perfil de preferências é responsabilidade do Proxy.
-
         if (!CoreAPI.getInstance().getModuleManager().isClaimed(br.com.realmmc.core.modules.SystemType.TAGS)) {
             CoreAPI.getInstance().getTagManager().updatePlayerTag(player);
         }

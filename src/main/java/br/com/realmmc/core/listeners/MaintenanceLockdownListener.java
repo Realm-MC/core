@@ -19,24 +19,43 @@ import org.jetbrains.annotations.NotNull;
 
 public class MaintenanceLockdownListener implements PluginMessageListener, Listener {
 
+    private final Main plugin;
     private final MaintenanceLockdownManager lockdownManager;
     private final String bypassPermission = "proxy.maintenance.bypass";
 
     public MaintenanceLockdownListener(Main plugin) {
+        this.plugin = plugin;
         this.lockdownManager = plugin.getMaintenanceLockdownManager();
     }
 
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, @NotNull byte[] message) {
         if (!channel.equals("proxy:maintenance")) return;
-        ByteArrayDataInput in = ByteStreams.newDataInput(message);
-        String subChannel = in.readUTF();
 
-        switch (subChannel) {
-            case "start" -> lockdownManager.setLockdownActive(true);
-            case "end", "cancel" -> lockdownManager.setLockdownActive(false);
-            case "maintenance_on" -> lockdownManager.startActionBarTask();
-            case "maintenance_off" -> lockdownManager.stopActionBarTask();
+        ByteArrayDataInput in = ByteStreams.newDataInput(message);
+        String data = in.readUTF();
+
+        String[] parts = data.split(":");
+        String state = parts[0];
+        String receivedTarget = parts.length > 1 ? parts[1] : "network";
+
+        boolean isGlobal = receivedTarget.equalsIgnoreCase("network");
+        boolean isForThisServer = plugin.getServerName().equalsIgnoreCase(receivedTarget);
+
+        if (isGlobal) {
+            switch(state) {
+                case "start" -> lockdownManager.setGlobalLockdown(true);
+                case "end", "cancel" -> lockdownManager.setGlobalLockdown(false);
+                case "maintenance_on" -> lockdownManager.startActionBarTask(true);
+                case "maintenance_off" -> lockdownManager.stopActionBarTask(true);
+            }
+        } else if (isForThisServer) {
+            switch(state) {
+                case "start" -> lockdownManager.setLocalLockdown(true);
+                case "end", "cancel" -> lockdownManager.setLocalLockdown(false);
+                case "maintenance_on" -> lockdownManager.startActionBarTask(false);
+                case "maintenance_off" -> lockdownManager.stopActionBarTask(false);
+            }
         }
     }
 

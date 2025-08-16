@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList; // IMPORT ADICIONADO
 import java.util.stream.Collectors;
 
 public class ActionBarManager {
@@ -37,7 +38,8 @@ public class ActionBarManager {
         Message newMessage = new Message(id, text, expiration);
 
         Map<MessagePriority, List<Message>> playerMessages = activeMessages.computeIfAbsent(player.getUniqueId(), k -> new EnumMap<>(MessagePriority.class));
-        List<Message> messageList = playerMessages.computeIfAbsent(priority, k -> new ArrayList<>());
+
+        List<Message> messageList = playerMessages.computeIfAbsent(priority, k -> new CopyOnWriteArrayList<>());
 
         messageList.removeIf(msg -> msg.getId().equals(id));
         messageList.add(newMessage);
@@ -72,6 +74,7 @@ public class ActionBarManager {
 
                     if (playerMessages.isEmpty()) {
                         activeMessages.remove(uuid);
+                        // Limpa a action bar se não houver mais mensagens
                         sendRawActionBar(player, " ");
                         continue;
                     }

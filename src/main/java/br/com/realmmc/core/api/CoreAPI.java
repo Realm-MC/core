@@ -37,6 +37,7 @@ public class CoreAPI {
     private final ServerConfigManager serverConfigManager;
     private final HologramManager hologramManager;
     private final PlayerResolver playerResolver;
+    private final MaintenanceLockdownManager maintenanceLockdownManager;
 
     public CoreAPI(Main main) {
         instance = this;
@@ -61,6 +62,7 @@ public class CoreAPI {
         this.serverConfigManager = main.getServerConfigManager();
         this.hologramManager = main.getHologramManager();
         this.playerResolver = main.getPlayerResolver();
+        this.maintenanceLockdownManager = main.getMaintenanceLockdownManager();
     }
 
     public static CoreAPI getInstance() {
@@ -88,4 +90,5 @@ public class CoreAPI {
     public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
     public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
+    public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
 }

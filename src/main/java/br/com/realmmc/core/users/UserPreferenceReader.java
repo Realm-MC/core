@@ -51,6 +51,20 @@ public class UserPreferenceReader {
         });
     }
 
+    public CompletableFuture<Boolean> hasRankupPersonalLight(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Document doc = preferencesCollection.find(Filters.eq("uuid", uuid.toString())).first();
+            return (doc != null) && doc.getBoolean("rankup_personal_light_status", false);
+        });
+    }
+
+    public CompletableFuture<Boolean> hasLobbyFly(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Document doc = preferencesCollection.find(Filters.eq("uuid", uuid.toString())).first();
+            return (doc != null) && doc.getBoolean("lobby_fly_status", false);
+        });
+    }
+
     public CompletableFuture<Document> getPreferencesAsDocumentAsync(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             Document doc = preferencesCollection.find(Filters.eq("uuid", uuid.toString())).first();

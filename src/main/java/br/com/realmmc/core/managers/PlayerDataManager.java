@@ -46,11 +46,17 @@ public class PlayerDataManager implements Listener {
         CompletableFuture<Document> profileFuture = CoreAPI.getInstance().getUserProfileReader().findUserByUUIDAsync(uuid);
         CompletableFuture<Document> preferencesFuture = CoreAPI.getInstance().getUserPreferenceReader().getPreferencesAsDocumentAsync(uuid);
         CompletableFuture<PlayerManager.PlayerDisplayInfo> displayInfoFuture = CoreAPI.getInstance().getPlayerManager().getPlayerDisplayInfo(uuid);
+        CompletableFuture<Boolean> lightFuture = CoreAPI.getInstance().getUserPreferenceReader().hasRankupPersonalLight(uuid);
+        CompletableFuture<Boolean> coinsFuture = CoreAPI.getInstance().getUserPreferenceReader().canReceiveCoins(uuid);
+        CompletableFuture<Boolean> lobbyFlyFuture = CoreAPI.getInstance().getUserPreferenceReader().hasLobbyFly(uuid);
 
-        CompletableFuture.allOf(profileFuture, preferencesFuture, displayInfoFuture).thenAccept(v -> {
+        CompletableFuture.allOf(profileFuture, preferencesFuture, displayInfoFuture, lightFuture, coinsFuture, lobbyFlyFuture).thenAccept(v -> {
             Document profileDoc = profileFuture.join();
             Document prefsDoc = preferencesFuture.join();
             PlayerManager.PlayerDisplayInfo displayInfo = displayInfoFuture.join();
+            boolean hasPersonalLight = lightFuture.join();
+            boolean canReceiveCoins = coinsFuture.join();
+            boolean hasLobbyFly = lobbyFlyFuture.join();
 
             if (profileDoc == null) {
                 plugin.getLogger().severe("Falha crítica ao carregar UserProfile para " + player.getName());
@@ -68,8 +74,9 @@ public class PlayerDataManager implements Listener {
             boolean rankupAlerts = prefsDoc.getBoolean("rankup_alert_status", true);
 
             RealmPlayer realmPlayer = new RealmPlayer(id, uuid, username, firstLogin, lastLogin,
-                    lobbyProtection, privateMessages, displayInfo.groupName(), displayInfo.prefix(),
-                    displayInfo.weight(), rankupConfirmation, rankupAlerts);
+                    lobbyProtection, privateMessages, canReceiveCoins, displayInfo.groupName(), displayInfo.prefix(),
+                    displayInfo.weight(), rankupConfirmation, rankupAlerts,
+                    hasPersonalLight, hasLobbyFly);
 
             playerDataCache.put(uuid, realmPlayer);
             plugin.getLogger().info("Perfil de " + username + " (ID: " + id + ") carregado e cacheado com sucesso.");

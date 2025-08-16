@@ -437,6 +437,13 @@ gui:
         - ""
       status_actionbar: "&eActionbar"
       status_chat: "&eChat"
+    personal-light-item:
+      name: "Luz Pessoal"
+      lore:
+        - "&7Ative ou desative uma fonte de luz"
+        - "&7que serve para iluminar o seu caminho."
+        - ""
+      status-line: "&fEstado: {status}"
     toggle:
       name_enabled: "&aAtivado"
       name_disabled: "&cDesativado"
@@ -460,6 +467,13 @@ gui:
       lore:
         - "&7Exige uma confirmação para usar /lobby"
         - "&7se você já estiver em um modo de jogo."
+        - ""
+      status-line: "&fEstado: {status}"
+    fly-lobby-item:
+      name: "Voar no Lobby"
+      lore:
+        - "&7Ative ou desative a sua capacidade"
+        - "&7de voar permanentemente no lobby."
         - ""
       status-line: "&fEstado: {status}"
     toggle:
@@ -536,6 +550,12 @@ toggle:
   rankup-alert:
     enabled: "&eAlertas de rankup alterados para Chat."
     disabled: "&eAlertas de rankup alterados para Actionbar."
+  personal-light:
+    enabled: "&aLuz pessoal ativada."
+    disabled: "&cLuz pessoal desativada."
+  fly-lobby:
+    enabled: "&aModo voar ativado."
+    disabled: "&cModo voar desativado."
 
 # --- COMANDOS DE MODERAÇÃO (CORE) ---
 moderation:
@@ -610,4 +630,12 @@ scoreboard:
   site: "&5realmmc.com.br"
 
 maintenance:
-  lockdown-message: "&cO servidor está iniciando uma manutenção. Ações estão temporariamente bloqueadas."
+  lockdown-message: "&cAs ações estão temporariamente bloqueadas por conta da manutenção!"
+  actionbar-active-network: "&c&lREDE EM MANUTENÇÃO"
+  actionbar-active-local: "&c&lSERVIDOR EM MANUTENÇÃO"
+
+commands:
+  luz:
+    permission-error: "&cVocê precisa do grupo Campeão &cou superior para usar este comando."
+  fly:
+    permission-error: "&cVocê precisa do grupo Campeão &cou superior para usar este comando."

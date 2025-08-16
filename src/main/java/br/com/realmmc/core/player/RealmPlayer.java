@@ -12,17 +12,21 @@ public class RealmPlayer {
     private final Date lastLogin;
     private final boolean lobbyProtectionEnabled;
     private final boolean privateMessagesEnabled;
+    private final boolean coinsReceiptEnabled;
     private final String primaryGroup;
     private final String prefix;
     private final int groupWeight;
     private boolean needsRankupConfirmation;
     private boolean prefersChatRankupAlerts;
+    private boolean hasPersonalLight;
+    private boolean lobbyFlyEnabled;
     private double balance;
 
     public RealmPlayer(long id, UUID uuid, String username, Date firstLogin, Date lastLogin,
-                       boolean lobbyProtectionEnabled, boolean privateMessagesEnabled,
+                       boolean lobbyProtectionEnabled, boolean privateMessagesEnabled, boolean coinsReceiptEnabled,
                        String primaryGroup, String prefix, int groupWeight,
-                       boolean needsRankupConfirmation, boolean prefersChatRankupAlerts) {
+                       boolean needsRankupConfirmation, boolean prefersChatRankupAlerts,
+                       boolean hasPersonalLight, boolean lobbyFlyEnabled) {
         this.id = id;
         this.uuid = uuid;
         this.username = username;
@@ -30,11 +34,14 @@ public class RealmPlayer {
         this.lastLogin = lastLogin;
         this.lobbyProtectionEnabled = lobbyProtectionEnabled;
         this.privateMessagesEnabled = privateMessagesEnabled;
+        this.coinsReceiptEnabled = coinsReceiptEnabled;
         this.primaryGroup = primaryGroup;
         this.prefix = prefix;
         this.groupWeight = groupWeight;
         this.needsRankupConfirmation = needsRankupConfirmation;
         this.prefersChatRankupAlerts = prefersChatRankupAlerts;
+        this.hasPersonalLight = hasPersonalLight;
+        this.lobbyFlyEnabled = lobbyFlyEnabled;
         this.balance = 0.0;
     }
 
@@ -45,19 +52,19 @@ public class RealmPlayer {
     public Date getLastLogin() { return lastLogin; }
     public boolean hasLobbyProtection() { return lobbyProtectionEnabled; }
     public boolean canReceivePrivateMessages() { return privateMessagesEnabled; }
+    public boolean canReceiveCoins() { return coinsReceiptEnabled; }
     public String getPrimaryGroup() { return primaryGroup; }
     public String getPrefix() { return prefix; }
     public int getGroupWeight() { return groupWeight; }
     public boolean needsRankupConfirmation() { return needsRankupConfirmation; }
     public boolean prefersChatRankupAlerts() { return prefersChatRankupAlerts; }
+    public boolean hasPersonalLight() { return hasPersonalLight; }
+    public boolean hasLobbyFly() { return lobbyFlyEnabled; }
     public double getBalance() { return balance; }
 
     public void setBalance(double balance) { this.balance = balance; }
-
-    public void setNeedsRankupConfirmation(boolean needsRankupConfirmation) {
-        this.needsRankupConfirmation = needsRankupConfirmation;
-    }
-    public void setPrefersChatRankupAlerts(boolean prefersChatRankupAlerts) {
-        this.prefersChatRankupAlerts = prefersChatRankupAlerts;
-    }
+    public void setNeedsRankupConfirmation(boolean needsRankupConfirmation) { this.needsRankupConfirmation = needsRankupConfirmation; }
+    public void setPrefersChatRankupAlerts(boolean prefersChatRankupAlerts) { this.prefersChatRankupAlerts = prefersChatRankupAlerts; }
+    public void setHasPersonalLight(boolean hasPersonalLight) { this.hasPersonalLight = hasPersonalLight; }
+    public void setLobbyFly(boolean lobbyFlyEnabled) { this.lobbyFlyEnabled = lobbyFlyEnabled; }
 }

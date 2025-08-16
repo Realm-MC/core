@@ -115,7 +115,8 @@ public final class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         if (this.maintenanceLockdownManager != null) {
-            this.maintenanceLockdownManager.stopActionBarTask();
+            this.maintenanceLockdownManager.stopActionBarTask(true);
+            this.maintenanceLockdownManager.stopActionBarTask(false);
         }
         if (this.hologramManager != null) {
             this.hologramManager.saveHolograms();
@@ -191,6 +192,7 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "core:preference_applied");
     }
 
     private boolean setupLuckPerms() {

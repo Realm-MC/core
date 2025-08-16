@@ -47,20 +47,21 @@ public abstract class BaseProfileMenuGUI extends Gui {
             meta.setOwningPlayer(player);
             head.setItemMeta(meta);
         }
-        this.inventory.setItem(4, head);
+        setItem(4, new GuiItem(head));
     }
 
     private GuiItem createFriendsItem() {
         String name = translations.getMessage("gui.profile.friends-item.name");
         List<String> lore = getLoreFromConfig("gui.profile.friends-item.lore");
+
         return new GuiItem(createItem(Material.PLAYER_HEAD, name, lore), event -> showComingSoon());
     }
 
     private GuiItem createPunishmentsItem() {
         String name = translations.getMessage("gui.profile.punishments-item.name");
         List<String> lore = getLoreFromConfig("gui.profile.punishments-item.lore");
+
         return new GuiItem(createItem(Material.BOOK, name, lore), event -> {
-            // Futuramente, pode executar um comando que abre a GUI de punições do Proxy.
             showComingSoon();
         });
     }

@@ -54,8 +54,7 @@ public class ProfileGUI extends BaseProfileMenuGUI {
         String name = translations.getMessage("gui.profile.statistics-item.name");
         List<String> lore = getLoreFromConfig("gui.profile.statistics-item.lore");
         Material material = Material.getMaterial(translations.getConfig().getString("gui.profile.statistics-item.material", "PAPER"));
-        CoreAPI.getInstance().getSoundManager().playError(player);
-        return new GuiItem(createItem(material, name, lore), event -> showComingSoon());
 
+        return new GuiItem(createItem(material, name, lore), event -> showComingSoon());
     }
 }
