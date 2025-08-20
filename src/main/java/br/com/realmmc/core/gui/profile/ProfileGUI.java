@@ -2,9 +2,11 @@ package br.com.realmmc.core.gui.profile;
 
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
+import br.com.realmmc.core.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
 import java.util.List;
 
 public class ProfileGUI extends BaseProfileMenuGUI {
@@ -27,11 +29,11 @@ public class ProfileGUI extends BaseProfileMenuGUI {
     public void setupItems() {
         setupHeader();
 
-        ItemStack separatorPane = createItem(
-                Material.BLACK_STAINED_GLASS_PANE,
-                translations.getMessage("gui.profile.separator-item.name"),
-                getLoreFromConfig("gui.profile.separator-item.lore")
-        );
+        ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(translations.getMessage("gui.profile.separator-item.name"))
+                .setLore(getLoreFromConfig("gui.profile.separator-item.lore"))
+                .build();
+
         for (int i = 9; i <= 17; i++) {
             setItem(i, separatorPane);
         }
@@ -44,7 +46,14 @@ public class ProfileGUI extends BaseProfileMenuGUI {
         String name = translations.getMessage("gui.profile.preferences-item.name");
         List<String> lore = getLoreFromConfig("gui.profile.preferences-item.lore");
         Material material = Material.getMaterial(translations.getConfig().getString("gui.profile.preferences-item.material", "COMPARATOR"));
-        return new GuiItem(createItem(material, name, lore), event -> {
+
+        ItemStack item = new ItemBuilder(material)
+                .setName(name)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();
         });
@@ -55,6 +64,12 @@ public class ProfileGUI extends BaseProfileMenuGUI {
         List<String> lore = getLoreFromConfig("gui.profile.statistics-item.lore");
         Material material = Material.getMaterial(translations.getConfig().getString("gui.profile.statistics-item.material", "PAPER"));
 
-        return new GuiItem(createItem(material, name, lore), event -> showComingSoon());
+        ItemStack item = new ItemBuilder(material)
+                .setName(name)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item, event -> showComingSoon());
     }
 }

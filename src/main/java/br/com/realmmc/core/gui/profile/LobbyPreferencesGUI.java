@@ -3,6 +3,7 @@ package br.com.realmmc.core.gui.profile;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
 import br.com.realmmc.core.player.RealmPlayer;
+import br.com.realmmc.core.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Material;
@@ -31,11 +32,11 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
     @Override
     public void setupItems() {
         setupHeader();
-        ItemStack separatorPane = createItem(
-                Material.BLACK_STAINED_GLASS_PANE,
-                translations.getMessage("gui.lobby-preferences.separator-item.name"),
-                getLoreFromConfig("gui.lobby-preferences.separator-item.lore")
-        );
+
+        ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(" ")
+                .build();
+
         for (int i = 9; i <= 17; i++) {
             setItem(i, separatorPane);
         }
@@ -72,7 +73,14 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-        return new GuiItem(createItem(Material.IRON_DOOR, name, lore));
+
+        ItemStack item = new ItemBuilder(Material.IRON_DOOR)
+                .setName(name)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item);
     }
 
     private GuiItem createLobbyFlyItem(boolean isEnabled, boolean hasPermission) {
@@ -85,7 +93,14 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-        return new GuiItem(createItem(Material.FEATHER, name, lore));
+
+        ItemStack item = new ItemBuilder(Material.FEATHER)
+                .setName(name)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item);
     }
 
     private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
@@ -93,7 +108,12 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
 
-        return new GuiItem(createItem(material, name, lore), event -> {
+        ItemStack item = new ItemBuilder(material)
+                .setName(name)
+                .setLore(lore)
+                .build();
+
+        return new GuiItem(item, event -> {
             if (!hasPermission) {
                 CoreAPI.getInstance().getSoundManager().playError(player);
                 return;
@@ -107,35 +127,22 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
-        player.sendPluginMessage(CoreAPI.getInstance().getPlugin(), "proxy:preferences", out.toByteArray());
-
-        Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player);
-        if (realmPlayerOpt.isPresent()) {
-            boolean isCurrentlyEnabled;
-            String messageKey = "";
-            switch (preferenceName.toLowerCase()) {
-                case "lobbyprotection":
-                    isCurrentlyEnabled = realmPlayerOpt.get().hasLobbyProtection();
-                    messageKey = !isCurrentlyEnabled ? "toggle.lobby-protection.enabled" : "toggle.lobby-protection.disabled";
-                    break;
-                case "lobbyfly":
-                    isCurrentlyEnabled = realmPlayerOpt.get().hasLobbyFly();
-                    messageKey = !isCurrentlyEnabled ? "toggle.fly-lobby.enabled" : "toggle.fly-lobby.disabled";
-                    break;
-            }
-            if (!messageKey.isEmpty()) {
-                translations.sendMessage(player, messageKey);
-            }
-        }
+        player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
 
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
-        player.getServer().getScheduler().runTaskLater(CoreAPI.getInstance().getPlugin(), this::buildDynamicItems, 10L);
+        player.getServer().getScheduler().runTaskLater(plugin, this::buildDynamicItems, 10L);
     }
 
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.lobby-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.lobby-preferences.back-item.lore");
-        return new GuiItem(createItem(Material.ARROW, name, lore), event -> {
+
+        ItemStack item = new ItemBuilder(Material.ARROW)
+                .setName(name)
+                .setLore(lore)
+                .build();
+
+        return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();
         });

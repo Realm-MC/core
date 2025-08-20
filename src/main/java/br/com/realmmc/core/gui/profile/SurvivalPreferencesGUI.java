@@ -2,6 +2,7 @@ package br.com.realmmc.core.gui.profile;
 
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
+import br.com.realmmc.core.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -28,21 +29,27 @@ public class SurvivalPreferencesGUI extends BaseProfileMenuGUI {
     public void setupItems() {
         setupHeader();
 
-        ItemStack separatorPane = createItem(
-                Material.BLACK_STAINED_GLASS_PANE,
-                translations.getMessage("gui.survival-preferences.separator-item.name"),
-                getLoreFromConfig("gui.survival-preferences.separator-item.lore")
-        );
+        ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(" ")
+                .build();
+
         for (int i = 9; i <= 17; i++) {
             setItem(i, separatorPane);
         }
+
         setItem(49, createBackItem());
     }
 
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.survival-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.survival-preferences.back-item.lore");
-        return new GuiItem(createItem(Material.ARROW, name, lore), event -> {
+
+        ItemStack item = new ItemBuilder(Material.ARROW)
+                .setName(name)
+                .setLore(lore)
+                .build();
+
+        return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();
         });

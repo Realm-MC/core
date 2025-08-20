@@ -8,9 +8,13 @@ import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.modules.SystemType;
+import br.com.realmmc.core.npc.NPCListener;
+import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
+import br.com.realmmc.core.users.GroupInfoReader;
+import br.com.realmmc.core.users.PurchaseHistoryReader;
 import br.com.realmmc.core.users.UserProfileReader;
 import br.com.realmmc.core.users.UserPreferenceManager;
 import br.com.realmmc.core.users.UserPreferenceReader;
@@ -18,6 +22,7 @@ import br.com.realmmc.core.utils.PlayerResolver;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import net.luckperms.api.LuckPerms;
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -54,6 +59,9 @@ public final class Main extends JavaPlugin {
     private PlayerResolver playerResolver;
     private MaintenanceLockdownManager maintenanceLockdownManager;
     private String serverName;
+    private NPCManager npcManager;
+    private PurchaseHistoryReader purchaseHistoryReader;
+    private GroupInfoReader groupInfoReader;
 
     @Override
     public void onEnable() {
@@ -101,19 +109,48 @@ public final class Main extends JavaPlugin {
         this.hologramManager = new HologramManager(this);
         this.playerResolver = new PlayerResolver();
         this.maintenanceLockdownManager = new MaintenanceLockdownManager(this);
+        this.groupInfoReader = new GroupInfoReader(this);
+        this.purchaseHistoryReader = new PurchaseHistoryReader(this);
+
+        if (Bukkit.getPluginManager().getPlugin("Citizens") != null) {
+            this.npcManager = new NPCManager(this);
+        }
 
         new CoreAPI(this);
 
         registerComponents();
         activateDefaultModules();
 
-        this.hologramManager.loadHolograms();
+        // Carrega hologramas e NPCs após o servidor iniciar para evitar o erro "unknown world"
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            getLogger().info("Carregando hologramas e NPCs...");
+            hologramManager.loadHolograms();
+
+            if (npcManager != null && Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
+                new NPCListener(this);
+            } else if (npcManager != null){
+                getLogger().severe("Citizens encontrado, mas ProtocolLib não! O sistema de NPCs será desativado.");
+            } else {
+                getLogger().info("Sistema de NPCs desativado pois o plugin Citizens não foi encontrado.");
+                PluginCommand npcCommand = getCommand("npc");
+                if (npcCommand != null) {
+                    npcCommand.setExecutor((sender, command, label, args) -> {
+                        sender.sendMessage("§cO sistema de NPCs está desativado neste servidor.");
+                        return true;
+                    });
+                }
+            }
+        }, 1L); // Atraso de 1 tick é o suficiente
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
     @Override
     public void onDisable() {
+        if (this.npcManager != null) {
+            // A persistência do Citizens cuida de salvar os NPCs, precisamos apenas despawnar os hologramas
+            this.hologramManager.despawnAll();
+        }
         if (this.maintenanceLockdownManager != null) {
             this.maintenanceLockdownManager.stopActionBarTask(true);
             this.maintenanceLockdownManager.stopActionBarTask(false);
@@ -177,6 +214,10 @@ public final class Main extends JavaPlugin {
         Objects.requireNonNull(getCommand("tphere")).setExecutor(teleportHereCommand);
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
+        NpcCommand npcExecutor = new NpcCommand();
+        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npc"));
+        npcCommand.setExecutor(npcExecutor);
+        npcCommand.setTabCompleter(npcExecutor);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
@@ -187,6 +228,7 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:opengui", new OpenGuiListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:broadcast", new TitleBroadcastListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:maintenance", maintenanceListener);
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:economy_update", new EconomyUpdateListener());
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
@@ -210,6 +252,7 @@ public final class Main extends JavaPlugin {
         }
     }
 
+    // Getters
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
@@ -234,4 +277,7 @@ public final class Main extends JavaPlugin {
     public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
+    public NPCManager getNpcManager() { return npcManager; }
+    public PurchaseHistoryReader getPurchaseHistoryReader() { return purchaseHistoryReader; }
+    public GroupInfoReader getGroupInfoReader() { return groupInfoReader; }
 }

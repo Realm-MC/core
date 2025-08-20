@@ -6,16 +6,13 @@ import br.com.realmmc.core.gui.GuiItem;
 import br.com.realmmc.core.managers.ActionBarManager;
 import br.com.realmmc.core.managers.TranslationsManager;
 import br.com.realmmc.core.player.RealmPlayer;
-import br.com.realmmc.core.utils.ColorAPI;
 import br.com.realmmc.core.utils.DateFormatter;
+import br.com.realmmc.core.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +28,7 @@ public abstract class BaseProfileMenuGUI extends Gui {
     protected void setupHeader() {
         setItem(3, createFriendsItem());
         setItem(5, createPunishmentsItem());
+        setItem(6, createPurchaseHistoryItem());
 
         CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player).ifPresent(this::createHeadItem);
     }
@@ -42,27 +40,49 @@ public abstract class BaseProfileMenuGUI extends Gui {
                 "first_join_date", DateFormatter.format(realmPlayer.getFirstLogin()),
                 "last_join_date", DateFormatter.format(realmPlayer.getLastLogin())
         );
-        ItemStack head = createItem(Material.PLAYER_HEAD, formattedName, lore);
+
+        ItemStack head = new ItemBuilder(Material.PLAYER_HEAD)
+                .setName(formattedName)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
         if (head.getItemMeta() instanceof SkullMeta meta) {
             meta.setOwningPlayer(player);
             head.setItemMeta(meta);
         }
+
         setItem(4, new GuiItem(head));
     }
 
     private GuiItem createFriendsItem() {
-        String name = translations.getMessage("gui.profile.friends-item.name");
-        List<String> lore = getLoreFromConfig("gui.profile.friends-item.lore");
-
-        return new GuiItem(createItem(Material.PLAYER_HEAD, name, lore), event -> showComingSoon());
+        ItemStack item = new ItemBuilder(Material.PLAYER_HEAD)
+                .setName(translations.getMessage("gui.profile.friends-item.name"))
+                .setLore(getLoreFromConfig("gui.profile.friends-item.lore"))
+                .hideFlags()
+                .build();
+        return new GuiItem(item, event -> showComingSoon());
     }
 
     private GuiItem createPunishmentsItem() {
-        String name = translations.getMessage("gui.profile.punishments-item.name");
-        List<String> lore = getLoreFromConfig("gui.profile.punishments-item.lore");
+        ItemStack item = new ItemBuilder(Material.BOOK)
+                .setName(translations.getMessage("gui.profile.punishments-item.name"))
+                .setLore(getLoreFromConfig("gui.profile.punishments-item.lore"))
+                .hideFlags()
+                .build();
+        return new GuiItem(item, event -> showComingSoon());
+    }
 
-        return new GuiItem(createItem(Material.BOOK, name, lore), event -> {
-            showComingSoon();
+    private GuiItem createPurchaseHistoryItem() {
+        ItemStack item = new ItemBuilder(Material.EMERALD)
+                .setName(translations.getMessage("gui.profile.purchase-history-item.name"))
+                .setLore(getLoreFromConfig("gui.profile.purchase-history-item.lore"))
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item, event -> {
+            CoreAPI.getInstance().getSoundManager().playClick(player);
+            new PurchaseHistoryGUI(player).open();
         });
     }
 
@@ -74,25 +94,13 @@ public abstract class BaseProfileMenuGUI extends Gui {
         CoreAPI.getInstance().getSoundManager().playError(player);
     }
 
-    protected ItemStack createItem(Material material, String name, List<String> lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ColorAPI.format(name));
-            meta.setLore(lore);
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
     protected List<String> getLoreFromConfig(String key, String... replacements) {
         List<String> rawLore = translations.getConfig().getStringList(key);
         return rawLore.stream().map(line -> {
             for (int i = 0; i < replacements.length; i += 2) {
                 line = line.replace("{" + replacements[i] + "}", replacements[i+1]);
             }
-            return ColorAPI.format(line);
+            return line;
         }).collect(Collectors.toList());
     }
 }

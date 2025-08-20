@@ -63,6 +63,9 @@ public class PlayerDataManager implements Listener {
                 return;
             }
 
+            // Lógica para pegar o cash do documento do perfil
+            long cash = profileDoc.get("cash", 0L);
+
             long id = profileDoc.getLong("_id");
             String username = profileDoc.getString("username");
             Date firstLogin = profileDoc.getDate("first_login");
@@ -76,7 +79,7 @@ public class PlayerDataManager implements Listener {
             RealmPlayer realmPlayer = new RealmPlayer(id, uuid, username, firstLogin, lastLogin,
                     lobbyProtection, privateMessages, canReceiveCoins, displayInfo.groupName(), displayInfo.prefix(),
                     displayInfo.weight(), rankupConfirmation, rankupAlerts,
-                    hasPersonalLight, hasLobbyFly);
+                    hasPersonalLight, hasLobbyFly, cash); // Passa o valor do cash
 
             playerDataCache.put(uuid, realmPlayer);
             plugin.getLogger().info("Perfil de " + username + " (ID: " + id + ") carregado e cacheado com sucesso.");

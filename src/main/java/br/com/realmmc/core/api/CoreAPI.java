@@ -5,8 +5,11 @@ import br.com.realmmc.core.gui.GuiManager;
 import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
+import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
+import br.com.realmmc.core.users.GroupInfoReader;
+import br.com.realmmc.core.users.PurchaseHistoryReader;
 import br.com.realmmc.core.users.UserProfileReader;
 import br.com.realmmc.core.users.UserPreferenceReader;
 import br.com.realmmc.core.users.UserPreferenceManager;
@@ -38,6 +41,9 @@ public class CoreAPI {
     private final HologramManager hologramManager;
     private final PlayerResolver playerResolver;
     private final MaintenanceLockdownManager maintenanceLockdownManager;
+    private final NPCManager npcManager;
+    private final PurchaseHistoryReader purchaseHistoryReader;
+    private final GroupInfoReader groupInfoReader;
 
     public CoreAPI(Main main) {
         instance = this;
@@ -63,6 +69,9 @@ public class CoreAPI {
         this.hologramManager = main.getHologramManager();
         this.playerResolver = main.getPlayerResolver();
         this.maintenanceLockdownManager = main.getMaintenanceLockdownManager();
+        this.npcManager = main.getNpcManager();
+        this.purchaseHistoryReader = main.getPurchaseHistoryReader();
+        this.groupInfoReader = main.getGroupInfoReader();
     }
 
     public static CoreAPI getInstance() {
@@ -91,4 +100,7 @@ public class CoreAPI {
     public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
+    public NPCManager getNpcManager() { return npcManager; }
+    public PurchaseHistoryReader getPurchaseHistoryReader() { return purchaseHistoryReader; }
+    public GroupInfoReader getGroupInfoReader() { return groupInfoReader; }
 }

@@ -343,6 +343,14 @@ gui:
         - "&7para entender melhor seu status na rede."
         - ""
         - "&eClique para ver seu histórico."
+    purchase-history-item:
+      name: "&aHistórico de Compras"
+      lore:
+        - "&7Aqui você pode visualizar todos os pacotes de Cash"
+        - "&7e grupos VIP que foram ativados em sua conta,"
+        - "&7seja por compra na loja ou por ativação de um admin."
+        - ""
+        - "&eClique para visualizar o seu histórico de compras."
     preferences-item:
       name: "&aPreferências"
       material: "COMPARATOR"
@@ -533,6 +541,53 @@ gui:
       lore:
         - "&7Clique para retornar ao menu"
         - "&7anterior de preferências."
+  purchase-history:
+    title: "Perfil / Histórico de Compras"
+    separator-item:
+      name: "&7↑ Navegação"
+      lore:
+        - "&7↓ Histórico de Compras"
+    no-purchases:
+      name: "&cSem nenhuma compra registrada!"
+      lore:
+        - "&7Parece que você nunca fez uma compra para este"
+        - "&7nickname, que tal realizarmos a primeira hoje?"
+        - ""
+        - "&fCupom exclusivo: &b&nPRIMEIRACOMPRA&8 (15% OFF)"
+        - ""
+        - "&aUtilize o clique para acessar a loja e utilizar o seu cupom."
+    vip-item:
+      name: "&r{group_display_name}"
+      lore:
+        - "&fData da ativação: &7{activation_date}"
+        - "&fData de expiração: &7{expiration_date}"
+        - ""
+        - "&fID da Transação: &e#{id}"
+        - "&fEstado: {status}"
+    cash-item:
+      name: "&aPacote de &6{amount} Cash"
+      lore:
+        - "&fData de recebimento: &7{reception_date}"
+        - ""
+        - "&fID da Transação: &e#{id}"
+        - "&fEstado: {status}"
+    status:
+      ativado: "&aAtivado"
+      expirado: "&cExpirado"
+      pendente: "&ePendente"
+    back-item:
+      name: "&aVoltar"
+      lore:
+        - "&7Clique para retornar ao menu"
+        - "&7principal do seu perfil."
+    previous-page-item:
+      name: "&aPágina Anterior"
+      lore:
+        - "&7Clique para ir para a página {page}."
+    next-page-item:
+      name: "&aPróxima Página"
+      lore:
+        - "&7Clique para ir para a página {page}."
 
 toggle:
   lobby-protection:
@@ -636,6 +691,36 @@ maintenance:
 
 commands:
   luz:
-    permission-error: "&cVocê precisa do grupo Campeão &cou superior para usar este comando."
+    permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
   fly:
-    permission-error: "&cVocê precisa do grupo Campeão &cou superior para usar este comando."
+    permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
+  npc:
+    usage: "&cUtilize: /npc <criar|deletar|list|info>"
+    player-only: "&cEste comando só pode ser executado por jogadores."
+    no-permission: "&cVocê não tem permissão para usar este comando."
+    invalid-subcommand: "&cSubcomando inválido. Utilize: /npc <criar|deletar|list|info>"
+    create:
+      usage: "&cUtilize: /npc criar <id>"
+      success: "&aNPC '{id}' criado e salvo na sua localização atual!"
+      not-found-in-config: "&cO NPC com o ID '{id}' não foi encontrado no arquivo npcs.yml."
+      already-spawned: "&cEste NPC já está spawnado. Use /npc deletar {id} primeiro."
+    delete:
+      usage: "&cUtilize: /npc deletar <id>"
+      success: "&aNPC '{id}' deletado com sucesso do mundo e da configuração!"
+      not-spawned: "&cO NPC com o ID '{id}' não está spawnado no mundo."
+    list:
+      header: "&6Lista de NPCs definidos:"
+      line-format: "&7- &e{id} {status}"
+      status-spawned: "&a(Spawnado)"
+      status-not-spawned: "&c(Não Spawnado)"
+      empty: "&cNão há NPCs definidos no arquivo npcs.yml."
+    info:
+      usage: "&cUtilize: /npc info <id>"
+      not-found: "&cO NPC com o ID '{id}' não foi encontrado nas configurações."
+      header: "&6Informações do NPC: &e{id}"
+      line-name: "&7- Nome de Exibição: &f{display_name}"
+      line-server: "&7- Servidor: &f{server}"
+      line-world: "&7- Mundo: &f{world}"
+      line-action: "&7- Ação: &f{action_type} ({action_value_size} linhas)"
+      line-location: "&7- Localização: &f{location}"
+      line-location-not-spawned: "&7- Localização: &cNão definida (use /npc criar)"

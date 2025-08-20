@@ -1,5 +1,6 @@
 package br.com.realmmc.core.gui;
 
+import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -14,12 +15,16 @@ public abstract class Gui {
     protected final Player player;
     protected Inventory inventory;
     protected final Map<Integer, GuiItem> items = new HashMap<>();
+    protected final Main plugin; // CAMPO ADICIONADO
 
+    // CONSTRUTOR ATUALIZADO para obter a instância do plugin
     public Gui(Player player) {
         this.player = player;
+        this.plugin = CoreAPI.getInstance().getPlugin();
     }
 
     public void open() {
+        // A linha abaixo usa o getTitle() que será implementado pelas subclasses
         this.inventory = Bukkit.createInventory(null, getSize(), getTitle());
         this.setupItems();
         this.player.openInventory(this.inventory);
@@ -41,6 +46,8 @@ public abstract class Gui {
         setItem(slot, new GuiItem(itemStack));
     }
 
+
+
     public void fillBorders(ItemStack item) {
         int invSize = getSize();
         for (int i = 0; i < invSize; i++) {
@@ -54,10 +61,6 @@ public abstract class Gui {
         return items;
     }
 
-    /**
-     * --- MÉTODO ADICIONADO AQUI ---
-     * Retorna a instância do inventário da GUI.
-     */
     public Inventory getInventory() {
         return inventory;
     }

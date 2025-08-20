@@ -20,13 +20,14 @@ public class RealmPlayer {
     private boolean prefersChatRankupAlerts;
     private boolean hasPersonalLight;
     private boolean lobbyFlyEnabled;
+    private long cash; // CAMPO ADICIONADO
     private double balance;
 
     public RealmPlayer(long id, UUID uuid, String username, Date firstLogin, Date lastLogin,
                        boolean lobbyProtectionEnabled, boolean privateMessagesEnabled, boolean coinsReceiptEnabled,
                        String primaryGroup, String prefix, int groupWeight,
                        boolean needsRankupConfirmation, boolean prefersChatRankupAlerts,
-                       boolean hasPersonalLight, boolean lobbyFlyEnabled) {
+                       boolean hasPersonalLight, boolean lobbyFlyEnabled, long cash) { // PARÂMETRO ADICIONADO
         this.id = id;
         this.uuid = uuid;
         this.username = username;
@@ -42,9 +43,11 @@ public class RealmPlayer {
         this.prefersChatRankupAlerts = prefersChatRankupAlerts;
         this.hasPersonalLight = hasPersonalLight;
         this.lobbyFlyEnabled = lobbyFlyEnabled;
+        this.cash = cash; // ATRIBUIÇÃO ADICIONADA
         this.balance = 0.0;
     }
 
+    // Getters
     public long getId() { return id; }
     public UUID getUuid() { return uuid; }
     public String getUsername() { return username; }
@@ -60,11 +63,14 @@ public class RealmPlayer {
     public boolean prefersChatRankupAlerts() { return prefersChatRankupAlerts; }
     public boolean hasPersonalLight() { return hasPersonalLight; }
     public boolean hasLobbyFly() { return lobbyFlyEnabled; }
+    public long getCash() { return cash; } // GETTER ADICIONADO
     public double getBalance() { return balance; }
 
+    // Setters
     public void setBalance(double balance) { this.balance = balance; }
     public void setNeedsRankupConfirmation(boolean needsRankupConfirmation) { this.needsRankupConfirmation = needsRankupConfirmation; }
     public void setPrefersChatRankupAlerts(boolean prefersChatRankupAlerts) { this.prefersChatRankupAlerts = prefersChatRankupAlerts; }
     public void setHasPersonalLight(boolean hasPersonalLight) { this.hasPersonalLight = hasPersonalLight; }
     public void setLobbyFly(boolean lobbyFlyEnabled) { this.lobbyFlyEnabled = lobbyFlyEnabled; }
+    public void setCash(long cash) { this.cash = cash; } // SETTER ADICIONADO
 }

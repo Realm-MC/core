@@ -2,6 +2,8 @@ package br.com.realmmc.core.gui.profile;
 
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
+import br.com.realmmc.core.player.RealmPlayer;
+import br.com.realmmc.core.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Material;
@@ -9,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Optional;
 
 public class ChatPreferencesGUI extends BaseProfileMenuGUI {
 
@@ -29,30 +32,32 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
     @Override
     public void setupItems() {
         setupHeader();
-        ItemStack separatorPane = createItem(
-                Material.BLACK_STAINED_GLASS_PANE,
-                translations.getMessage("gui.chat-preferences.separator-item.name"),
-                getLoreFromConfig("gui.chat-preferences.separator-item.lore")
-        );
+
+        ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
+                .setName(" ")
+                .build();
+
         for (int i = 9; i <= 17; i++) {
             setItem(i, separatorPane);
         }
-        fetchAndBuild();
+
+        buildDynamicItems();
         setItem(49, createBackItem());
     }
 
-    private void fetchAndBuild() {
-        CoreAPI.getInstance().getUserPreferenceReader().canReceiveTell(player.getUniqueId()).thenAccept(isEnabled -> {
-            player.getServer().getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
-                boolean hasPermission = player.hasPermission("core.champion");
-                buildDynamicItems(isEnabled, hasPermission);
-            });
-        });
-    }
+    private void buildDynamicItems() {
+        Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player);
+        if (realmPlayerOpt.isEmpty()) {
+            player.closeInventory();
+            player.sendMessage("§cOcorreu um erro ao carregar suas preferências.");
+            return;
+        }
 
-    private void buildDynamicItems(boolean canReceiveTell, boolean hasPermission) {
-        setItem(19, createTellItem(canReceiveTell, hasPermission));
-        setItem(28, createTellToggleItem(canReceiveTell, hasPermission));
+        RealmPlayer realmPlayer = realmPlayerOpt.get();
+        boolean hasPermission = player.hasPermission("core.champion");
+
+        setItem(19, createTellItem(realmPlayer.canReceivePrivateMessages(), hasPermission));
+        setItem(28, createToggleItem(realmPlayer.canReceivePrivateMessages(), "PlayerTell", hasPermission));
     }
 
     private GuiItem createTellItem(boolean isEnabled, boolean hasPermission) {
@@ -60,46 +65,60 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
         String name = nameColor + translations.getRawMessage("gui.chat-preferences.tell-item.name");
         List<String> lore = getLoreFromConfig("gui.chat-preferences.tell-item.lore");
         String status = translations.getMessage("gui.chat-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
-        lore.add(translations.getMessage("gui.chat-preferences.tell-item.status-line", "status", status));
+        lore.add(translations.getMessage("gui.chat-preferences.status-line", "status", status));
         if (!hasPermission) {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-        return new GuiItem(createItem(Material.OAK_SIGN, name, lore));
+
+        ItemStack item = new ItemBuilder(Material.PAPER)
+                .setName(name)
+                .setLore(lore)
+                .hideFlags()
+                .build();
+
+        return new GuiItem(item, event -> sendTogglePreferenceMessage("PlayerTell", hasPermission));
     }
 
-    private GuiItem createTellToggleItem(boolean isEnabled, boolean hasPermission) {
+    private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.chat-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
 
-        return new GuiItem(createItem(material, name, lore), event -> {
-            if (!hasPermission) {
-                CoreAPI.getInstance().getSoundManager().playError(player);
-                return;
-            }
-            sendTogglePreferenceMessage("PlayerTell", !isEnabled);
-        });
+        ItemStack item = new ItemBuilder(material)
+                .setName(name)
+                .setLore(lore)
+                .build();
+
+        return new GuiItem(item, event -> sendTogglePreferenceMessage(preferenceName, hasPermission));
     }
 
-    private void sendTogglePreferenceMessage(String preferenceName, boolean newState) {
+    private void sendTogglePreferenceMessage(String preferenceName, boolean hasPermission) {
+        if (!hasPermission) {
+            CoreAPI.getInstance().getSoundManager().playError(player);
+            return;
+        }
+
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
-        player.sendPluginMessage(CoreAPI.getInstance().getPlugin(), "proxy:preferences", out.toByteArray());
+        player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
 
-        String messageKey = newState ? "toggle.tell.enabled" : "toggle.tell.disabled";
-        translations.sendMessage(player, messageKey);
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
-
-        player.getServer().getScheduler().runTaskLater(CoreAPI.getInstance().getPlugin(), this::fetchAndBuild, 10L);
+        player.getServer().getScheduler().runTaskLater(plugin, this::buildDynamicItems, 10L);
     }
 
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.chat-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.chat-preferences.back-item.lore");
-        return new GuiItem(createItem(Material.ARROW, name, lore), event -> {
+
+        ItemStack item = new ItemBuilder(Material.ARROW)
+                .setName(name)
+                .setLore(lore)
+                .build();
+
+        return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();
         });
