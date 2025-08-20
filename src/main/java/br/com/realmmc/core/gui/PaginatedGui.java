@@ -1,115 +1,126 @@
 package br.com.realmmc.core.gui;
 
 import br.com.realmmc.core.api.CoreAPI;
-import br.com.realmmc.core.utils.ColorAPI;
+import br.com.realmmc.core.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
+/**
+ * Versão refatorada do PaginatedGui que suporta o carregamento assíncrono de itens.
+ * É a classe base para qualquer menu que precise exibir dados de uma fonte externa (como um banco de dados)
+ * e que possua múltiplas páginas.
+ */
 public abstract class PaginatedGui extends Gui {
 
     protected int page = 0;
-    protected final List<Integer> itemSlots; // Alterado para protected
+    protected final List<Integer> itemSlots;
 
     public PaginatedGui(Player player, List<Integer> itemSlots) {
         super(player);
-        this.itemSlots = itemSlots;
+        this.itemSlots = itemSlots != null ? itemSlots : Collections.emptyList();
     }
 
-    public PaginatedGui(Player player) {
-        this(player, null);
-    }
+    /**
+     * Configura os itens estáticos da GUI, como o cabeçalho, bordas, painéis de separação
+     * e botões fixos (ex: "Voltar"). Este método é chamado primeiro, exibindo um "esqueleto" do menu.
+     */
+    public abstract void setupStaticItems();
 
-    public abstract List<GuiItem> getPageItems();
+    /**
+     * Busca os itens da página de forma assíncrona. Este método é o coração da GUI,
+     * responsável por buscar os dados e transformá-los em uma lista de GuiItems.
+     * @return um CompletableFuture que, quando completo, contém a lista de GuiItems para a página.
+     */
+    public abstract CompletableFuture<List<GuiItem>> fetchPageItems();
 
     @Override
-    public void setupItems() {
-        items.clear();
-        inventory.clear();
+    public void open() {
+        // Adiciona som ao abrir o menu
+        CoreAPI.getInstance().getSoundManager().playClick(player);
 
-        List<GuiItem> allItems = getPageItems();
-        if (allItems == null) allItems = Collections.emptyList();
+        // 1. Cria o inventário e configura os itens estáticos (o "esqueleto")
+        this.inventory = plugin.getServer().createInventory(null, getSize(), getTitle());
+        setupStaticItems();
 
-        populateItems(allItems);
-        addPageNavigation(allItems);
+        // 2. Exibe o menu "esqueleto" para o jogador imediatamente
+        player.openInventory(this.inventory);
+        CoreAPI.getInstance().getGuiManager().getOpenGuis().put(player.getUniqueId(), this);
+
+        // 3. Inicia a busca assíncrona pelos itens dinâmicos
+        fetchPageItems().thenAccept(guiItems -> {
+            // 4. Quando a busca terminar, popula o inventário na thread principal do servidor
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                // Garante que o jogador ainda está com a GUI aberta
+                if (CoreAPI.getInstance().getGuiManager().getOpenGuis().get(player.getUniqueId()) == this) {
+                    populateItems(guiItems);
+                }
+            });
+        }).exceptionally(ex -> {
+            plugin.getLogger().severe("Falha ao carregar itens para a GUI paginada: " + getTitle());
+            ex.printStackTrace();
+            return null;
+        });
     }
 
-    private void populateItems(List<GuiItem> allItems) {
-        if (allItems.isEmpty()) return;
+    @Override
+    public final void setupItems() {
+        // Este método não é mais utilizado diretamente. A lógica foi movida para
+        // open(), setupStaticItems() e fetchPageItems() para suportar a assincronicidade.
+    }
 
-        int maxItemsPerPage = (itemSlots != null && !itemSlots.isEmpty()) ? itemSlots.size() : getSize() - 18;
+    /**
+     * Popula o inventário com os itens buscados e adiciona os botões de navegação.
+     * @param allItems A lista completa de GuiItems retornada por fetchPageItems().
+     */
+    private void populateItems(List<GuiItem> allItems) {
+        // Limpa os slots de itens antes de popular (remove o item "Carregando...")
+        for (int slot : itemSlots) {
+            inventory.setItem(slot, null);
+        }
+
+        if (allItems == null || allItems.isEmpty()) {
+            addPageNavigation(Collections.emptyList());
+            return;
+        }
+
+        // Caso especial: se a lista tem apenas um item (como o "nenhum item encontrado"), centraliza ele
+        if (allItems.size() == 1 && itemSlots.size() > 1) {
+            int middleSlotIndex = itemSlots.size() / 2;
+            setItem(itemSlots.get(middleSlotIndex), allItems.get(0));
+            addPageNavigation(allItems);
+            return;
+        }
+
+        int maxItemsPerPage = itemSlots.size();
         int startIndex = page * maxItemsPerPage;
 
         for (int i = 0; i < maxItemsPerPage; i++) {
             int itemIndex = startIndex + i;
             if (itemIndex >= allItems.size()) break;
 
-            int slot;
-            if (itemSlots != null && !itemSlots.isEmpty()) {
-                slot = itemSlots.get(i);
-            } else {
-                slot = i + 9;
-            }
+            int slot = itemSlots.get(i);
             setItem(slot, allItems.get(itemIndex));
         }
+
+        addPageNavigation(allItems);
     }
 
-    // --- MÉTODO ALTERADO PARA PROTECTED ---
-    protected void addPageNavigation(List<GuiItem> allItems) {
-        int totalItems = allItems.size();
-        int maxItemsPerPage = (itemSlots != null && !itemSlots.isEmpty()) ? itemSlots.size() : itemSlots.size();
+    /**
+     * Adiciona os botões de "Próxima Página" e "Página Anterior" ao menu.
+     * Este método deve ser sobrescrito pela subclasse para definir os slots corretos.
+     * @param allItems A lista total de itens para calcular se há mais páginas.
+     */
+    protected abstract void addPageNavigation(List<GuiItem> allItems);
 
-        // Botão de voltar página (SLOT 9)
-        if (page > 0) {
-            GuiItem previousPage = new GuiItem(
-                    createItem(
-                            Material.ARROW,
-                            CoreAPI.getInstance().getTranslationsManager().getRawMessage("gui.pagination.previous-page-name"),
-                            Collections.singletonList(CoreAPI.getInstance().getTranslationsManager().getRawMessage("gui.pagination.previous-page-lore"))
-                    ),
-                    event -> {
-                        page--;
-                        open();
-                        CoreAPI.getInstance().getSoundManager().playClick(player);
-                    }
-            );
-            setItem(9, previousPage);
-        }
-
-        // Botão de avançar página (SLOT 17)
-        if ((page + 1) * maxItemsPerPage < totalItems) {
-            GuiItem nextPage = new GuiItem(
-                    createItem(
-                            Material.ARROW,
-                            CoreAPI.getInstance().getTranslationsManager().getRawMessage("gui.pagination.next-page-name"),
-                            Collections.singletonList(CoreAPI.getInstance().getTranslationsManager().getRawMessage("gui.pagination.next-page-lore"))
-                    ),
-                    event -> {
-                        page++;
-                        open();
-                        CoreAPI.getInstance().getSoundManager().playClick(player);
-                    }
-            );
-            setItem(17, nextPage);
-        }
-    }
-
-    // --- MÉTODO ALTERADO PARA PROTECTED ---
+    /**
+     * Helper para criar um ItemStack de forma rápida.
+     */
     protected ItemStack createItem(Material material, String name, List<String> lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ColorAPI.format(name));
-            meta.setLore(lore.stream().map(ColorAPI::format).collect(Collectors.toList()));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-            item.setItemMeta(meta);
-        }
-        return item;
+        return new ItemBuilder(material).setName(name).setLore(lore).hideFlags().build();
     }
 }

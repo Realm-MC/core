@@ -16,6 +16,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/BaseProfileMenuGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/ChatPreferencesGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/LobbyPreferencesGUI.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/PaginatedProfileMenuGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/PreferencesGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/PrivacyPreferencesGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/ProfileGUI.java

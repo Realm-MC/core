@@ -1,9 +1,10 @@
 package br.com.realmmc.core.listeners;
 
 import br.com.realmmc.core.api.CoreAPI;
+import br.com.realmmc.core.gui.Gui;
+import br.com.realmmc.core.gui.profile.*;
 import br.com.realmmc.core.player.RealmPlayer;
 import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -32,42 +33,54 @@ public class PreferenceUpdateListener implements PluginMessageListener {
             Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(playerUuid);
 
             realmPlayerOpt.ifPresent(realmPlayer -> {
-                boolean updated = true;
-                switch (preferenceKey.toLowerCase()) {
-                    case "rankupconfirmation":
-                        realmPlayer.setNeedsRankupConfirmation(newState);
-                        break;
-                    case "rankupalert":
-                        realmPlayer.setPrefersChatRankupAlerts(newState);
-                        break;
-                    case "rankuppersonallight":
-                        realmPlayer.setHasPersonalLight(newState);
-                        break;
-                    case "lobbyfly":
-                        realmPlayer.setLobbyFly(newState);
-                        break;
-                    default:
-                        updated = false;
-                        break;
-                }
+                updateLocalCache(realmPlayer, preferenceKey, newState);
 
-                if (updated) {
-                    Player onlinePlayer = Bukkit.getPlayer(playerUuid);
-                    if (onlinePlayer != null && onlinePlayer.isOnline()) {
-                        sendPreferenceAppliedMessage(onlinePlayer, preferenceKey, newState);
-                    }
+                Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+                if (onlinePlayer != null && onlinePlayer.isOnline()) {
+                    sendFeedbackMessage(onlinePlayer, preferenceKey, newState);
+                    refreshOpenGui(onlinePlayer);
                 }
             });
         }
     }
 
-    private void sendPreferenceAppliedMessage(Player player, String preferenceKey, boolean newState) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("PreferenceApplied");
-        out.writeUTF(player.getUniqueId().toString());
-        out.writeUTF(preferenceKey);
-        out.writeBoolean(newState);
+    private void updateLocalCache(RealmPlayer realmPlayer, String key, boolean newState) {
+        // MÉTODOS CORRIGIDOS AQUI
+        switch (key.toLowerCase()) {
+            case "lobbyprotection": realmPlayer.setLobbyProtectionEnabled(newState); break;
+            case "playertell": realmPlayer.setPrivateMessagesEnabled(newState); break;
+            case "coinsreceipt": realmPlayer.setCoinsReceiptEnabled(newState); break;
+            case "rankupconfirmation": realmPlayer.setNeedsRankupConfirmation(newState); break;
+            case "rankupalert": realmPlayer.setPrefersChatRankupAlerts(newState); break;
+            case "rankuppersonallight": realmPlayer.setHasPersonalLight(newState); break;
+            case "lobbyfly": realmPlayer.setLobbyFlyEnabled(newState); break; // Corrigido de setLobbyFly para setLobbyFlyEnabled
+        }
+    }
 
-        player.sendPluginMessage(CoreAPI.getInstance().getPlugin(), "core:preference_applied", out.toByteArray());
+    private void sendFeedbackMessage(Player player, String key, boolean newState) {
+        String messageKey = "";
+        switch (key.toLowerCase()) {
+            case "lobbyprotection": messageKey = newState ? "toggle.lobby-protection.enabled" : "toggle.lobby-protection.disabled"; break;
+            case "playertell": messageKey = newState ? "toggle.tell.enabled" : "toggle.tell.disabled"; break;
+            case "coinsreceipt": messageKey = newState ? "toggle.coins-receipt.enabled" : "toggle.coins-receipt.disabled"; break;
+            case "rankupconfirmation": messageKey = newState ? "toggle.rankup-confirm.enabled" : "toggle.rankup-confirm.disabled"; break;
+            case "rankupalert": messageKey = newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled"; break;
+            case "rankuppersonallight": messageKey = newState ? "toggle.personal-light.enabled" : "toggle.personal-light.disabled"; break;
+            case "lobbyfly": messageKey = newState ? "toggle.fly-lobby.enabled" : "toggle.fly-lobby.disabled"; break;
+        }
+        if (!messageKey.isEmpty()) {
+            CoreAPI.getInstance().getTranslationsManager().sendMessage(player, messageKey);
+        }
+    }
+
+    private void refreshOpenGui(Player player) {
+        Gui openGui = CoreAPI.getInstance().getGuiManager().getOpenGuis().get(player.getUniqueId());
+
+        if (openGui instanceof LobbyPreferencesGUI ||
+                openGui instanceof ChatPreferencesGUI ||
+                openGui instanceof RankupPreferencesGUI) {
+
+            Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), openGui::open);
+        }
     }
 }

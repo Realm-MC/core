@@ -123,14 +123,15 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
     }
 
     private void sendTogglePreferenceMessage(String preferenceName) {
+        // Toca o som para feedback instantâneo
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+        // Apenas envia a requisição. A atualização visual será feita pelo listener.
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
         player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
-
-        CoreAPI.getInstance().getSoundManager().playSuccess(player);
-        player.getServer().getScheduler().runTaskLater(plugin, this::buildDynamicItems, 10L);
     }
 
     private GuiItem createBackItem() {

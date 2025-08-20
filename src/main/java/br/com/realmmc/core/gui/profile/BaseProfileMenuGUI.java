@@ -25,18 +25,21 @@ public abstract class BaseProfileMenuGUI extends Gui {
         this.translations = CoreAPI.getInstance().getTranslationsManager();
     }
 
+    /**
+     * Configura o cabeçalho padrão com informações do jogador e itens de navegação.
+     */
     protected void setupHeader() {
         setItem(3, createFriendsItem());
+        CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player).ifPresent(this::createHeadItem);
         setItem(5, createPunishmentsItem());
         setItem(6, createPurchaseHistoryItem());
-
-        CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player).ifPresent(this::createHeadItem);
     }
 
     private void createHeadItem(RealmPlayer realmPlayer) {
         String formattedName = realmPlayer.getPrefix() + realmPlayer.getUsername();
         List<String> lore = getLoreFromConfig("gui.profile.head-item.lore",
                 "player_group", realmPlayer.getPrimaryGroup(),
+                "cash", String.valueOf(realmPlayer.getCash()),
                 "first_join_date", DateFormatter.format(realmPlayer.getFirstLogin()),
                 "last_join_date", DateFormatter.format(realmPlayer.getLastLogin())
         );
@@ -51,35 +54,33 @@ public abstract class BaseProfileMenuGUI extends Gui {
             meta.setOwningPlayer(player);
             head.setItemMeta(meta);
         }
-
         setItem(4, new GuiItem(head));
     }
 
     private GuiItem createFriendsItem() {
-        ItemStack item = new ItemBuilder(Material.PLAYER_HEAD)
-                .setName(translations.getMessage("gui.profile.friends-item.name"))
-                .setLore(getLoreFromConfig("gui.profile.friends-item.lore"))
-                .hideFlags()
-                .build();
+        ItemStack item = createItem(
+                Material.PLAYER_HEAD,
+                translations.getMessage("gui.profile.friends-item.name"),
+                getLoreFromConfig("gui.profile.friends-item.lore")
+        );
         return new GuiItem(item, event -> showComingSoon());
     }
 
     private GuiItem createPunishmentsItem() {
-        ItemStack item = new ItemBuilder(Material.BOOK)
-                .setName(translations.getMessage("gui.profile.punishments-item.name"))
-                .setLore(getLoreFromConfig("gui.profile.punishments-item.lore"))
-                .hideFlags()
-                .build();
+        ItemStack item = createItem(
+                Material.BOOK,
+                translations.getMessage("gui.profile.punishments-item.name"),
+                getLoreFromConfig("gui.profile.punishments-item.lore")
+        );
         return new GuiItem(item, event -> showComingSoon());
     }
 
     private GuiItem createPurchaseHistoryItem() {
-        ItemStack item = new ItemBuilder(Material.EMERALD)
-                .setName(translations.getMessage("gui.profile.purchase-history-item.name"))
-                .setLore(getLoreFromConfig("gui.profile.purchase-history-item.lore"))
-                .hideFlags()
-                .build();
-
+        ItemStack item = createItem(
+                Material.EMERALD,
+                translations.getMessage("gui.profile.purchase-history-item.name"),
+                getLoreFromConfig("gui.profile.purchase-history-item.lore")
+        );
         return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PurchaseHistoryGUI(player).open();
@@ -94,6 +95,9 @@ public abstract class BaseProfileMenuGUI extends Gui {
         CoreAPI.getInstance().getSoundManager().playError(player);
     }
 
+    /**
+     * Helper para buscar uma lista de strings (lore) do arquivo de tradução.
+     */
     protected List<String> getLoreFromConfig(String key, String... replacements) {
         List<String> rawLore = translations.getConfig().getStringList(key);
         return rawLore.stream().map(line -> {
@@ -102,5 +106,12 @@ public abstract class BaseProfileMenuGUI extends Gui {
             }
             return line;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * Helper para criar um ItemStack de forma rápida, evitando conflitos.
+     */
+    protected ItemStack createItem(Material material, String name, List<String> lore) {
+        return new ItemBuilder(material).setName(name).setLore(lore).hideFlags().build();
     }
 }

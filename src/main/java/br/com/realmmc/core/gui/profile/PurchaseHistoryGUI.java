@@ -3,9 +3,10 @@ package br.com.realmmc.core.gui.profile;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.GuiItem;
 import br.com.realmmc.core.model.Purchase;
-import br.com.realmmc.core.users.GroupInfoReader;
 import br.com.realmmc.core.utils.DateFormatter;
 import br.com.realmmc.core.utils.ItemBuilder;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.group.Group;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -14,22 +15,44 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
-public class PurchaseHistoryGUI extends BaseProfileMenuGUI {
+public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
+
+    private static final List<Integer> ITEM_SLOTS = Arrays.asList(
+            19, 20, 21, 22, 23, 24, 25,
+            28, 29, 30, 31, 32, 33, 34
+    );
+
+    private static final Map<String, String> GROUP_COLORS = Map.ofEntries(
+            Map.entry("master", "&6"), Map.entry("manager", "&4"), Map.entry("administrator", "&c"),
+            Map.entry("moderator", "&2"), Map.entry("helper", "&e"), Map.entry("builder", "&3"),
+            Map.entry("partner", "&c"), Map.entry("supreme", "&4"), Map.entry("legendary", "&2"),
+            Map.entry("hero", "&5"), Map.entry("champion", "&3"), Map.entry("default", "&7"),
+            Map.entry("test", "&3"), Map.entry("momo", "&d")
+    );
 
     private final NumberFormat numberFormat = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
-    private final int page;
-    private static final int ITEMS_PER_PAGE = 14;
-
-    public PurchaseHistoryGUI(Player player) {
-        this(player, 1);
-    }
+    private final LuckPerms luckPerms; // Adicionado para acesso direto à API
 
     public PurchaseHistoryGUI(Player player, int page) {
-        super(player);
+        super(player, ITEM_SLOTS);
         this.page = page;
+        this.luckPerms = CoreAPI.getInstance().getPlugin().getLuckPerms(); // Obtém a instância do LuckPerms
     }
 
+    public PurchaseHistoryGUI(Player player) {
+        this(player, 0);
+    }
+
+    @Override
+    protected void openNewPage(int newPage) {
+        new PurchaseHistoryGUI(player, newPage).open();
+    }
+
+    // O restante da classe (getTitle, getSize, setupStaticItems, fetchPageItems, etc.) permanece o mesmo...
     @Override
     public String getTitle() {
         return translations.getMessage("gui.purchase-history.title");
@@ -41,8 +64,8 @@ public class PurchaseHistoryGUI extends BaseProfileMenuGUI {
     }
 
     @Override
-    public void setupItems() {
-        setupHeader();
+    public void setupStaticItems() {
+        super.setupStaticItems();
 
         ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
                 .setName(translations.getMessage("gui.purchase-history.separator-item.name"))
@@ -52,86 +75,51 @@ public class PurchaseHistoryGUI extends BaseProfileMenuGUI {
             setItem(i, separatorPane);
         }
 
+        setItem(31, new GuiItem(new ItemBuilder(Material.CLOCK).setName("§eCarregando histórico...").build()));
         setItem(49, createBackItem());
+    }
 
-        CoreAPI.getInstance().getPurchaseHistoryReader().getPurchaseHistory(player.getUniqueId())
-                .thenAccept(purchases -> {
-                    player.getServer().getScheduler().runTask(this.plugin, () -> {
-                        if (purchases.isEmpty()) {
-                            setItem(31, createNoPurchasesItem());
-                            return;
-                        }
-
-                        int startIndex = (page - 1) * ITEMS_PER_PAGE;
-                        int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, purchases.size());
-
-                        if (startIndex >= purchases.size() && page > 1) {
-                            new PurchaseHistoryGUI(player, 1).open();
-                            return;
-                        }
-
-                        List<Purchase> pageItems = purchases.subList(startIndex, endIndex);
-
-                        List<Integer> availableSlots = Arrays.asList(
-                                20, 21, 22, 23, 24, 25, 26,
-                                29, 30, 31, 32, 33, 34, 35
-                        );
-
-                        for (int i = 0; i < pageItems.size(); i++) {
-                            Purchase purchase = pageItems.get(i);
-                            int slot = availableSlots.get(i);
-                            if (purchase.type().equals("VIP")) {
-                                createVipItem(purchase, slot);
-                            } else if (purchase.type().equals("CASH")) {
-                                setItem(slot, createCashItem(purchase));
-                            }
-                        }
-
-                        if (page > 1) {
-                            setItem(48, createPreviousPageItem());
-                        }
-                        if (endIndex < purchases.size()) {
-                            setItem(50, createNextPageItem());
-                        }
-                    });
+    @Override
+    public CompletableFuture<List<GuiItem>> fetchPageItems() {
+        return CoreAPI.getInstance().getPurchaseHistoryReader().getPurchaseHistory(player.getUniqueId())
+                .thenApply(purchases -> {
+                    if (purchases.isEmpty()) {
+                        return List.of(createNoPurchasesItem());
+                    }
+                    // A conversão agora é síncrona, pois a API do LuckPerms é rápida o suficiente (usa cache)
+                    return purchases.stream()
+                            .map(purchase -> "VIP".equals(purchase.type()) ? createVipItem(purchase) : createCashItem(purchase))
+                            .collect(Collectors.toList());
                 });
     }
 
-    // =======================================================================
-    // MÉTODOS QUE FALTAVAM (ADICIONADOS ABAIXO)
-    // =======================================================================
+    private GuiItem createVipItem(Purchase purchase) {
+        String groupId = purchase.name();
+        Group group = this.luckPerms.getGroupManager().getGroup(groupId);
 
-    private GuiItem createNoPurchasesItem() {
-        ItemStack item = new ItemBuilder(Material.COBWEB)
-                .setName(translations.getMessage("gui.purchase-history.no-purchases.name"))
-                .setLore(getLoreFromConfig("gui.purchase-history.no-purchases.lore"))
+        // Define valores padrão caso o grupo não seja encontrado (segurança)
+        String groupDisplayName = groupId;
+        if (group != null) {
+            // Usa o displayName() da API do LuckPerms
+            String displayNameFromApi = group.getDisplayName();
+            groupDisplayName = (displayNameFromApi != null) ? displayNameFromApi : group.getName();
+        }
+
+        String statusMessage = translations.getRawMessage("gui.purchase-history.status." + purchase.status().toLowerCase());
+
+        // Lógica de coloração
+        String color = GROUP_COLORS.getOrDefault(groupId.toLowerCase(), "&7");
+        String finalItemName = color + groupDisplayName;
+
+        ItemStack item = new ItemBuilder(Material.DIAMOND)
+                .setName(finalItemName)
+                .setLore(getLoreFromConfig("gui.purchase-history.vip-item.lore",
+                        "activation_date", DateFormatter.format(purchase.date()),
+                        "expiration_date", purchase.expirationDate() != null ? DateFormatter.format(purchase.expirationDate()) : "Permanente",
+                        "id", purchase.id(),
+                        "status", statusMessage))
                 .build();
-
-        return new GuiItem(item, event -> {
-            player.closeInventory();
-            player.sendMessage("§aVisite nossa loja em: §b§nloja.seuservidor.com");
-            CoreAPI.getInstance().getSoundManager().playClick(player);
-        });
-    }
-
-    private void createVipItem(Purchase purchase, int slot) {
-        GroupInfoReader groupInfoReader = CoreAPI.getInstance().getGroupInfoReader();
-        // A busca do nome do grupo é assíncrona
-        groupInfoReader.getDisplayName(purchase.name()).thenAccept(groupDisplayName -> {
-            String statusMessage = translations.getRawMessage("gui.purchase-history.status." + purchase.status().toLowerCase());
-
-            ItemStack item = new ItemBuilder(Material.DIAMOND)
-                    .setName(translations.getMessage("gui.purchase-history.vip-item.name", "group_display_name", groupDisplayName.orElse(purchase.name())))
-                    .setLore(getLoreFromConfig("gui.purchase-history.vip-item.lore",
-                            "activation_date", DateFormatter.format(purchase.date()),
-                            "expiration_date", purchase.expirationDate() != null ? DateFormatter.format(purchase.expirationDate()) : "Permanente",
-                            "id", purchase.id(),
-                            "status", statusMessage))
-                    .build();
-
-            // Atualiza o item na GUI quando a busca terminar
-            player.getServer().getScheduler().runTask(plugin, () -> setItem(slot, new GuiItem(item)));
-        });
+        return new GuiItem(item);
     }
 
     private GuiItem createCashItem(Purchase purchase) {
@@ -148,27 +136,24 @@ public class PurchaseHistoryGUI extends BaseProfileMenuGUI {
         return new GuiItem(item);
     }
 
+    // createBackItem e createNoPurchasesItem permanecem os mesmos
+    private GuiItem createNoPurchasesItem() {
+        ItemStack item = new ItemBuilder(Material.COBWEB)
+                .setName(translations.getMessage("gui.purchase-history.no-purchases.name"))
+                .setLore(getLoreFromConfig("gui.purchase-history.no-purchases.lore"))
+                .build();
+
+        return new GuiItem(item, event -> {
+            player.closeInventory();
+            CoreAPI.getInstance().getSoundManager().playClick(player);
+        });
+    }
+
     private GuiItem createBackItem() {
         ItemStack item = new ItemBuilder(Material.ARROW)
                 .setName(translations.getMessage("gui.purchase-history.back-item.name"))
                 .setLore(getLoreFromConfig("gui.purchase-history.back-item.lore"))
                 .build();
         return new GuiItem(item, event -> new ProfileGUI(player).open());
-    }
-
-    private GuiItem createPreviousPageItem() {
-        ItemStack item = new ItemBuilder(Material.ARROW)
-                .setName(translations.getMessage("gui.purchase-history.previous-page-item.name", "page", String.valueOf(page - 1)))
-                .setLore(getLoreFromConfig("gui.purchase-history.previous-page-item.lore", "page", String.valueOf(page - 1)))
-                .build();
-        return new GuiItem(item, event -> new PurchaseHistoryGUI(player, page - 1).open());
-    }
-
-    private GuiItem createNextPageItem() {
-        ItemStack item = new ItemBuilder(Material.ARROW)
-                .setName(translations.getMessage("gui.purchase-history.next-page-item.name", "page", String.valueOf(page + 1)))
-                .setLore(getLoreFromConfig("gui.purchase-history.next-page-item.lore", "page", String.valueOf(page + 1)))
-                .build();
-        return new GuiItem(item, event -> new PurchaseHistoryGUI(player, page + 1).open());
     }
 }

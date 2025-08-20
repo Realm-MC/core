@@ -56,8 +56,8 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         RealmPlayer realmPlayer = realmPlayerOpt.get();
         boolean hasPermission = player.hasPermission("rankup.champion");
 
-        setItem(19, createCoinsReceiptItem(true, hasPermission)); // Este toggle não está implementado no proxy, assumindo true
-        setItem(28, createToggleItem(true, "CoinsReceipt", hasPermission));
+        setItem(19, createCoinsReceiptItem(realmPlayer.canReceiveCoins(), hasPermission));
+        setItem(28, createToggleItem(realmPlayer.canReceiveCoins(), "CoinsReceipt", hasPermission));
 
         setItem(20, createRankupConfirmItem(realmPlayer.needsRankupConfirmation(), hasPermission));
         setItem(29, createToggleItem(realmPlayer.needsRankupConfirmation(), "RankupConfirmation", hasPermission));
@@ -80,12 +80,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
 
-        ItemStack item = new ItemBuilder(Material.GOLD_INGOT)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.GOLD_INGOT).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -100,12 +95,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
 
-        ItemStack item = new ItemBuilder(Material.EMERALD)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.EMERALD).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -115,12 +105,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         String status = translations.getMessage("gui.rankup-preferences.rankup-alert-item.status_" + (isChatMode ? "chat" : "actionbar"));
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
 
-        ItemStack item = new ItemBuilder(Material.BELL)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.BELL).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -135,12 +120,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
 
-        ItemStack item = new ItemBuilder(Material.GLOWSTONE_DUST)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.GLOWSTONE_DUST).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -149,10 +129,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
 
-        ItemStack item = new ItemBuilder(material)
-                .setName(name)
-                .setLore(lore)
-                .build();
+        ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
 
         return new GuiItem(item, event -> {
             if (!hasPermission) {
@@ -168,23 +145,20 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isChatMode ? Material.LIGHT_BLUE_DYE : Material.PINK_DYE;
 
-        ItemStack item = new ItemBuilder(material)
-                .setName(name)
-                .setLore(lore)
-                .build();
-
+        ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> sendTogglePreferenceMessage("RankupAlert"));
     }
 
     private void sendTogglePreferenceMessage(String preferenceName) {
+        // Toca o som para feedback instantâneo
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+        // Apenas envia a requisição. A atualização visual será feita pelo listener.
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
         player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
-
-        CoreAPI.getInstance().getSoundManager().playSuccess(player);
-        player.getServer().getScheduler().runTaskLater(plugin, this::buildDynamicItems, 10L);
     }
 
     private GuiItem createBackItem() {

@@ -77,7 +77,8 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
                 .hideFlags()
                 .build();
 
-        return new GuiItem(item, event -> sendTogglePreferenceMessage("PlayerTell", hasPermission));
+        // A ação de clique foi removida daqui e centralizada no botão de toggle
+        return new GuiItem(item);
     }
 
     private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
@@ -99,14 +100,16 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
             return;
         }
 
+        // Toca o som para feedback instantâneo ao jogador
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+        // Apenas envia a requisição para o proxy. A atualização visual
+        // será acionada pelo PreferenceUpdateListener quando a mudança for confirmada.
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
         player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
-
-        CoreAPI.getInstance().getSoundManager().playSuccess(player);
-        player.getServer().getScheduler().runTaskLater(plugin, this::buildDynamicItems, 10L);
     }
 
     private GuiItem createBackItem() {
