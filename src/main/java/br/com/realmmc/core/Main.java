@@ -22,6 +22,8 @@ import br.com.realmmc.core.utils.PlayerResolver;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import net.luckperms.api.LuckPerms;
+import net.skinsrestorer.api.SkinsRestorer;
+import net.skinsrestorer.api.SkinsRestorerProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
@@ -37,6 +39,7 @@ public final class Main extends JavaPlugin {
 
     private LuckPerms luckPerms;
     private ViaAPI<?> viaAPI;
+    private SkinsRestorer skinsRestorerApi;
     private DatabaseManager databaseManager;
     private TranslationsManager translationsManager;
     private UserProfileReader userProfileReader;
@@ -116,23 +119,23 @@ public final class Main extends JavaPlugin {
             this.npcManager = new NPCManager(this);
         }
 
+        setupSkinsRestorer();
+
         new CoreAPI(this);
 
         registerComponents();
         activateDefaultModules();
 
-        // Carrega hologramas e NPCs após o servidor iniciar para evitar o erro "unknown world"
         Bukkit.getScheduler().runTaskLater(this, () -> {
             getLogger().info("Carregando hologramas e NPCs...");
             hologramManager.loadHolograms();
 
             if (npcManager != null && Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
+                npcManager.loadAndSpawnAll();
                 new NPCListener(this);
-            } else if (npcManager != null){
-                getLogger().severe("Citizens encontrado, mas ProtocolLib não! O sistema de NPCs será desativado.");
             } else {
                 getLogger().info("Sistema de NPCs desativado pois o plugin Citizens não foi encontrado.");
-                PluginCommand npcCommand = getCommand("npc");
+                PluginCommand npcCommand = getCommand("npcs");
                 if (npcCommand != null) {
                     npcCommand.setExecutor((sender, command, label, args) -> {
                         sender.sendMessage("§cO sistema de NPCs está desativado neste servidor.");
@@ -140,23 +143,18 @@ public final class Main extends JavaPlugin {
                     });
                 }
             }
-        }, 1L); // Atraso de 1 tick é o suficiente
+        }, 1L);
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
     @Override
     public void onDisable() {
-        if (this.npcManager != null) {
-            // A persistência do Citizens cuida de salvar os NPCs, precisamos apenas despawnar os hologramas
-            this.hologramManager.despawnAll();
-        }
         if (this.maintenanceLockdownManager != null) {
             this.maintenanceLockdownManager.stopActionBarTask(true);
             this.maintenanceLockdownManager.stopActionBarTask(false);
         }
         if (this.hologramManager != null) {
-            this.hologramManager.saveHolograms();
             this.hologramManager.despawnAll();
         }
         if (databaseManager != null) {
@@ -214,8 +212,9 @@ public final class Main extends JavaPlugin {
         Objects.requireNonNull(getCommand("tphere")).setExecutor(teleportHereCommand);
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
+
         NpcCommand npcExecutor = new NpcCommand();
-        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npc"));
+        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npcs"));
         npcCommand.setExecutor(npcExecutor);
         npcCommand.setTabCompleter(npcExecutor);
 
@@ -235,6 +234,7 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "core:preference_applied");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "core:punishment_notify");
     }
 
     private boolean setupLuckPerms() {
@@ -252,10 +252,20 @@ public final class Main extends JavaPlugin {
         }
     }
 
+    private void setupSkinsRestorer() {
+        if (getServer().getPluginManager().getPlugin("SkinsRestorer") != null) {
+            this.skinsRestorerApi = SkinsRestorerProvider.get();
+            getLogger().info("API do SkinsRestorer v15 conectada com sucesso.");
+        } else {
+            getLogger().warning("SkinsRestorer não encontrado. O comando /skin não funcionará.");
+        }
+    }
+
     // Getters
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
+    public SkinsRestorer getSkinsRestorerApi() { return skinsRestorerApi; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public TranslationsManager getTranslationsManager() { return translationsManager; }
     public UserProfileReader getUserProfileReader() { return userProfileReader; }

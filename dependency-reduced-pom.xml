@@ -57,6 +57,10 @@
       <id>dmulloy2-repo</id>
       <url>https://repo.dmulloy2.net/repository/public/</url>
     </repository>
+    <repository>
+      <id>codemc</id>
+      <url>https://repo.codemc.org/repository/maven-public/</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -94,6 +98,12 @@
           <groupId>*</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>net.skinsrestorer</groupId>
+      <artifactId>skinsrestorer-api</artifactId>
+      <version>15.7.10</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <properties>

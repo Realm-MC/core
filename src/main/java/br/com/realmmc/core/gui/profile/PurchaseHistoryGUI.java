@@ -5,6 +5,7 @@ import br.com.realmmc.core.gui.GuiItem;
 import br.com.realmmc.core.model.Purchase;
 import br.com.realmmc.core.utils.DateFormatter;
 import br.com.realmmc.core.utils.ItemBuilder;
+import br.com.realmmc.core.utils.JsonMessage;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.model.group.Group;
 import org.bukkit.Material;
@@ -35,12 +36,12 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
     );
 
     private final NumberFormat numberFormat = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
-    private final LuckPerms luckPerms; // Adicionado para acesso direto à API
+    private final LuckPerms luckPerms;
 
     public PurchaseHistoryGUI(Player player, int page) {
         super(player, ITEM_SLOTS);
         this.page = page;
-        this.luckPerms = CoreAPI.getInstance().getPlugin().getLuckPerms(); // Obtém a instância do LuckPerms
+        this.luckPerms = CoreAPI.getInstance().getPlugin().getLuckPerms();
     }
 
     public PurchaseHistoryGUI(Player player) {
@@ -52,7 +53,6 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
         new PurchaseHistoryGUI(player, newPage).open();
     }
 
-    // O restante da classe (getTitle, getSize, setupStaticItems, fetchPageItems, etc.) permanece o mesmo...
     @Override
     public String getTitle() {
         return translations.getMessage("gui.purchase-history.title");
@@ -66,7 +66,6 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
     @Override
     public void setupStaticItems() {
         super.setupStaticItems();
-
         ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
                 .setName(translations.getMessage("gui.purchase-history.separator-item.name"))
                 .setLore(getLoreFromConfig("gui.purchase-history.separator-item.lore"))
@@ -74,40 +73,28 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
         for (int i = 9; i < 18; i++) {
             setItem(i, separatorPane);
         }
-
-        setItem(31, new GuiItem(new ItemBuilder(Material.CLOCK).setName("§eCarregando histórico...").build()));
         setItem(49, createBackItem());
+    }
+
+    @Override
+    protected void displayEmptyMessage() {
+        setItem(31, createNoPurchasesItem());
     }
 
     @Override
     public CompletableFuture<List<GuiItem>> fetchPageItems() {
         return CoreAPI.getInstance().getPurchaseHistoryReader().getPurchaseHistory(player.getUniqueId())
-                .thenApply(purchases -> {
-                    if (purchases.isEmpty()) {
-                        return List.of(createNoPurchasesItem());
-                    }
-                    // A conversão agora é síncrona, pois a API do LuckPerms é rápida o suficiente (usa cache)
-                    return purchases.stream()
-                            .map(purchase -> "VIP".equals(purchase.type()) ? createVipItem(purchase) : createCashItem(purchase))
-                            .collect(Collectors.toList());
-                });
+                .thenApply(purchases -> purchases.stream()
+                        .map(purchase -> "VIP".equals(purchase.type()) ? createVipItem(purchase) : createCashItem(purchase))
+                        .collect(Collectors.toList()));
     }
 
     private GuiItem createVipItem(Purchase purchase) {
         String groupId = purchase.name();
         Group group = this.luckPerms.getGroupManager().getGroup(groupId);
-
-        // Define valores padrão caso o grupo não seja encontrado (segurança)
-        String groupDisplayName = groupId;
-        if (group != null) {
-            // Usa o displayName() da API do LuckPerms
-            String displayNameFromApi = group.getDisplayName();
-            groupDisplayName = (displayNameFromApi != null) ? displayNameFromApi : group.getName();
-        }
+        String groupDisplayName = (group != null && group.getDisplayName() != null) ? group.getDisplayName() : groupId;
 
         String statusMessage = translations.getRawMessage("gui.purchase-history.status." + purchase.status().toLowerCase());
-
-        // Lógica de coloração
         String color = GROUP_COLORS.getOrDefault(groupId.toLowerCase(), "&7");
         String finalItemName = color + groupDisplayName;
 
@@ -136,7 +123,6 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
         return new GuiItem(item);
     }
 
-    // createBackItem e createNoPurchasesItem permanecem os mesmos
     private GuiItem createNoPurchasesItem() {
         ItemStack item = new ItemBuilder(Material.COBWEB)
                 .setName(translations.getMessage("gui.purchase-history.no-purchases.name"))
@@ -145,7 +131,27 @@ public class PurchaseHistoryGUI extends PaginatedProfileMenuGUI {
 
         return new GuiItem(item, event -> {
             player.closeInventory();
-            CoreAPI.getInstance().getSoundManager().playClick(player);
+            CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+            String storeUrl = translations.getRawMessage("general.store-url");
+            List<String> messageLines = translations.getConfig().getStringList("gui.purchase-history.no-purchases.click-message");
+            String hoverText = translations.getRawMessage("gui.purchase-history.no-purchases.click-hover");
+
+            for (String line : messageLines) {
+                if (line.contains("AQUI")) {
+                    String[] parts = line.split("AQUI");
+                    JsonMessage jsonMessage = JsonMessage.create(parts[0]);
+                    jsonMessage.then("&e&lAQUI")
+                            .url(storeUrl)
+                            .withHover(hoverText);
+                    if (parts.length > 1) {
+                        jsonMessage.then(parts[1]);
+                    }
+                    jsonMessage.send(player);
+                } else {
+                    player.sendMessage(CoreAPI.getInstance().getTranslationsManager().getMessage(line));
+                }
+            }
         });
     }
 

@@ -65,6 +65,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/punishments/PunishmentReader.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/scoreboard/DefaultScoreboardHandler.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/scoreboard/DefaultScoreboardManager.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/task/CooldownTask.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/users/GroupInfoReader.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/users/PurchaseHistoryReader.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/users/UserPreferenceManager.java

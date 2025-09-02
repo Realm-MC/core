@@ -2,8 +2,6 @@ package br.com.realmmc.core.npc;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
-import br.com.realmmc.core.npc.NPC;
-import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.npc.actions.ActionType;
 import br.com.realmmc.core.utils.ColorAPI;
 import net.citizensnpcs.api.event.NPCRightClickEvent;

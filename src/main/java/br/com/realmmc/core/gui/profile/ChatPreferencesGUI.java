@@ -34,7 +34,8 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
         setupHeader();
 
         ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
-                .setName(" ")
+                .setName(translations.getMessage("gui.chat-preferences.separator-item.name"))
+                .setLore(getLoreFromConfig("gui.chat-preferences.separator-item.lore"))
                 .build();
 
         for (int i = 9; i <= 17; i++) {

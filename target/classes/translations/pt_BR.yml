@@ -313,7 +313,7 @@ gui:
     title: "Seletor de Lobbies"
   pagination:
     previous-page-name: "&aPágina Anterior"
-    previous-page-lore: "&7Clique para voltar para a página anterior."
+    previous-page-lore: "&7Clique para retornar à página anterior."
     next-page-name: "&aPróxima Página"
     next-page-lore: "&7Clique para avançar para a próxima página."
 
@@ -348,7 +348,7 @@ gui:
       lore:
         - "&7Aqui você pode visualizar todos os pacotes de Cash"
         - "&7e grupos VIP que foram ativados em sua conta,"
-        - "&7seja por compra na loja ou por ativação de um admin."
+        - "&7seja por compra por você ou enviado de presente."
         - ""
         - "&eClique para visualizar o seu histórico de compras."
     preferences-item:
@@ -556,6 +556,11 @@ gui:
         - "&fCupom exclusivo: &b&nPRIMEIRACOMPRA&8 (15% OFF)"
         - ""
         - "&aUtilize o clique para acessar a loja e utilizar o seu cupom."
+      click-message:
+        - "&f"
+        - "&a Clique &e&lAQUI&a para acessar a loja do servidor."
+        - "&f"
+      click-hover: "&eloja.realmmc.com.br"
     vip-item:
       name: "&r{group_display_name}"
       lore:
@@ -583,11 +588,11 @@ gui:
     previous-page-item:
       name: "&aPágina Anterior"
       lore:
-        - "&7Clique para ir para a página {page}."
+        - "&7Clique para avançar para a página {page}."
     next-page-item:
       name: "&aPróxima Página"
       lore:
-        - "&7Clique para ir para a página {page}."
+        - "&7Clique para retornar à página {page}."
 
 toggle:
   lobby-protection:
@@ -724,3 +729,44 @@ commands:
       line-action: "&7- Ação: &f{action_type} ({action_value_size} linhas)"
       line-location: "&7- Localização: &f{location}"
       line-location-not-spawned: "&7- Localização: &cNão definida (use /npc criar)"
+
+skin:
+  usage:
+    main: "&cUtilize: /skin <nickname | limpar | historico>"
+    ban: "&cUtilize: /skin ban <nickname>"
+    unban: "&cUtilize: /skin unban <nickname>"
+  success:
+    set:
+      self: "&aSua skin foi alterada para a de &e{skin}&a!"
+      other: "&aVocê alterou a skin de &r{player} &apara a de &e{skin}&a!"
+    clear:
+      self: "&aSua skin foi restaurada para a original."
+      other: "&aVocê restaurou a skin de &r{player} &apara a original."
+    banned: "&aA skin &e{skin} &afoi banida com sucesso!"
+    unbanned: "&aA skin &e{skin} &afoi desbanida com sucesso!"
+  error:
+    api-not-found: "&cO sistema de skins não está funcionando no momento. Contate um administrador."
+    not-found: "&cA skin do jogador &e{skin} &cnão foi encontrada."
+    banned: "&cEsta skin (&e{skin}&c) está banida e não pode ser utilizada."
+  cooldown: "&cAguarde {time}s para alterar sua skin novamente!"
+  history:
+    header: "&6Histórico de skins de &r{player}&6:"
+    format: "&7- &e{skin} &7(em {date})"
+    empty: "&cO jogador &r{player} &cnão possui histórico de skins."
+  help:
+    champion:
+      - "&f"
+      - "&6Deseja trocar de skin?"
+      - "&7- &e/skin <nickname> &7Utilizar a skin deste nickname."
+      - "&7- &e/skin limpar &7Voltar para a sua skin original."
+      - "&7- &e/skin historico &7Ver o histórico de skins que você já utilizou."
+      - "&f"
+    admin:
+      - "&f"
+      - "&6Comandos de skins:"
+      - "&7- &e/skin <nickname> [usuário] &7Utilizar a skin deste nickname."
+      - "&7- &e/skin limpar [usuário] &7Voltar para a sua skin original."
+      - "&7- &e/skin historico [usuário] &7Ver o histórico de skins que você já utilizou."
+      - "&7- &e/skin ban <nickname> &7Banir uma skin de ser utilizada."
+      - "&7- &e/skin unban <nickname> &7Desbanir uma skin."
+      - "&f"

@@ -35,6 +35,5 @@ public class PlayerListener implements Listener {
         event.setQuitMessage(null);
 
         CoreAPI.getInstance().getDelayManager().clearDelays(player.getUniqueId());
-        CoreAPI.getInstance().getCooldownManager().cancelOnQuit(player);
     }
 }

@@ -33,7 +33,7 @@ public class HologramManager {
             for (String id : config.getConfigurationSection("holograms").getKeys(false)) {
                 Location location = config.getLocation("holograms." + id + ".location");
                 List<String> lines = config.getStringList("holograms." + id + ".lines");
-                if (location != null && !lines.isEmpty()) {
+                if (location != null && location.getWorld() != null && !lines.isEmpty()) {
                     Hologram hologram = new Hologram(id, location, lines);
                     hologram.spawn();
                     activeHolograms.put(id.toLowerCase(), hologram);
@@ -61,15 +61,14 @@ public class HologramManager {
         activeHolograms.clear();
     }
 
-    public Optional<Hologram> createHologram(String id, Location location, List<String> lines) {
+    public Hologram createHologram(String id, Location location, List<String> lines) {
         if (activeHolograms.containsKey(id.toLowerCase())) {
-            // Se já existe, deleta o antigo para evitar duplicatas
             deleteHologram(id);
         }
         Hologram hologram = new Hologram(id, location, lines);
         hologram.spawn();
         activeHolograms.put(id.toLowerCase(), hologram);
-        return Optional.of(hologram);
+        return hologram;
     }
 
     public void deleteHologram(String id) {

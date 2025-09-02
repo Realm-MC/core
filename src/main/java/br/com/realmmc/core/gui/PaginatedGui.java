@@ -11,9 +11,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Versão refatorada do PaginatedGui que suporta o carregamento assíncrono de itens.
- * É a classe base para qualquer menu que precise exibir dados de uma fonte externa (como um banco de dados)
- * e que possua múltiplas páginas.
+ * Classe base para GUIs que possuem múltiplas páginas e carregam seus itens de forma assíncrona.
  */
 public abstract class PaginatedGui extends Gui {
 
@@ -26,36 +24,44 @@ public abstract class PaginatedGui extends Gui {
     }
 
     /**
-     * Configura os itens estáticos da GUI, como o cabeçalho, bordas, painéis de separação
-     * e botões fixos (ex: "Voltar"). Este método é chamado primeiro, exibindo um "esqueleto" do menu.
+     * Configura os itens estáticos da GUI (cabeçalho, bordas, botões fixos).
+     * Este método é chamado primeiro, exibindo um "esqueleto" do menu.
      */
     public abstract void setupStaticItems();
 
     /**
-     * Busca os itens da página de forma assíncrona. Este método é o coração da GUI,
-     * responsável por buscar os dados e transformá-los em uma lista de GuiItems.
+     * Busca os itens da página de forma assíncrona.
      * @return um CompletableFuture que, quando completo, contém a lista de GuiItems para a página.
      */
     public abstract CompletableFuture<List<GuiItem>> fetchPageItems();
 
+    /**
+     * Define o que fazer quando a lista de itens está vazia (ex: colocar um item de aviso).
+     */
+    protected abstract void displayEmptyMessage();
+
+    /**
+     * Adiciona os botões de navegação (página anterior/próxima).
+     * @param allItems A lista total de itens para calcular se há mais páginas.
+     */
+    protected abstract void addPageNavigation(List<GuiItem> allItems);
+
     @Override
     public void open() {
-        // Adiciona som ao abrir o menu
         CoreAPI.getInstance().getSoundManager().playClick(player);
 
-        // 1. Cria o inventário e configura os itens estáticos (o "esqueleto")
+        // 1. Cria o inventário e configura os itens estáticos.
         this.inventory = plugin.getServer().createInventory(null, getSize(), getTitle());
         setupStaticItems();
 
-        // 2. Exibe o menu "esqueleto" para o jogador imediatamente
+        // 2. Exibe o menu "esqueleto" para o jogador.
         player.openInventory(this.inventory);
         CoreAPI.getInstance().getGuiManager().getOpenGuis().put(player.getUniqueId(), this);
 
-        // 3. Inicia a busca assíncrona pelos itens dinâmicos
+        // 3. Inicia a busca assíncrona pelos itens.
         fetchPageItems().thenAccept(guiItems -> {
-            // 4. Quando a busca terminar, popula o inventário na thread principal do servidor
+            // 4. Quando a busca terminar, popula o inventário na thread principal.
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                // Garante que o jogador ainda está com a GUI aberta
                 if (CoreAPI.getInstance().getGuiManager().getOpenGuis().get(player.getUniqueId()) == this) {
                     populateItems(guiItems);
                 }
@@ -69,30 +75,22 @@ public abstract class PaginatedGui extends Gui {
 
     @Override
     public final void setupItems() {
-        // Este método não é mais utilizado diretamente. A lógica foi movida para
-        // open(), setupStaticItems() e fetchPageItems() para suportar a assincronicidade.
+        // A lógica principal foi movida para o método open() para suportar a assincronicidade.
     }
 
     /**
      * Popula o inventário com os itens buscados e adiciona os botões de navegação.
-     * @param allItems A lista completa de GuiItems retornada por fetchPageItems().
+     * Este método é 'protected' para permitir que subclasses (como RanksGUI) o customizem.
      */
-    private void populateItems(List<GuiItem> allItems) {
-        // Limpa os slots de itens antes de popular (remove o item "Carregando...")
+    protected void populateItems(List<GuiItem> allItems) {
+        // Limpa os slots de itens para remover placeholders (ex: "Carregando...")
         for (int slot : itemSlots) {
             inventory.setItem(slot, null);
         }
 
         if (allItems == null || allItems.isEmpty()) {
-            addPageNavigation(Collections.emptyList());
-            return;
-        }
-
-        // Caso especial: se a lista tem apenas um item (como o "nenhum item encontrado"), centraliza ele
-        if (allItems.size() == 1 && itemSlots.size() > 1) {
-            int middleSlotIndex = itemSlots.size() / 2;
-            setItem(itemSlots.get(middleSlotIndex), allItems.get(0));
-            addPageNavigation(allItems);
+            displayEmptyMessage(); // Chama o método para exibir a mensagem de vazio
+            addPageNavigation(Collections.emptyList()); // Adiciona navegação mesmo se vazio (para o botão "voltar")
             return;
         }
 
@@ -109,13 +107,6 @@ public abstract class PaginatedGui extends Gui {
 
         addPageNavigation(allItems);
     }
-
-    /**
-     * Adiciona os botões de "Próxima Página" e "Página Anterior" ao menu.
-     * Este método deve ser sobrescrito pela subclasse para definir os slots corretos.
-     * @param allItems A lista total de itens para calcular se há mais páginas.
-     */
-    protected abstract void addPageNavigation(List<GuiItem> allItems);
 
     /**
      * Helper para criar um ItemStack de forma rápida.

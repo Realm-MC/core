@@ -10,12 +10,13 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Hologram {
 
     private final String id;
-    private final Location baseLocation;
+    private Location baseLocation;
     private final List<String> lines = new CopyOnWriteArrayList<>();
     private final List<TextDisplay> displayEntities = new ArrayList<>();
     private static final double LINE_HEIGHT = 0.3;
@@ -34,7 +35,7 @@ public class Hologram {
             Location lineLocation = baseLocation.clone().add(0, (lines.size() - 1 - i) * LINE_HEIGHT, 0);
             String text = PlaceholderRegistry.replacePlaceholders(lines.get(i));
 
-            baseLocation.getWorld().spawn(lineLocation, TextDisplay.class, entity -> {
+            Objects.requireNonNull(baseLocation.getWorld()).spawn(lineLocation, TextDisplay.class, entity -> {
                 entity.setText(text);
                 entity.setBillboard(Display.Billboard.CENTER);
                 entity.setSeeThrough(true);
@@ -63,11 +64,22 @@ public class Hologram {
         }
     }
 
+    // ---> MÉTODO QUE ESTÁ FALTANDO NO SEU PROJETO LOBBY <---
     public void setLines(List<String> newLines) {
         this.lines.clear();
         this.lines.addAll(newLines);
+        // Despawna e respawna as entidades para refletir o novo número de linhas e conteúdo.
         despawn();
         spawn();
+    }
+
+    public void setBaseLocation(Location location) {
+        this.baseLocation = location;
+        // Move as entidades existentes para a nova localização
+        for (int i = 0; i < displayEntities.size(); i++) {
+            Location newLineLocation = baseLocation.clone().add(0, (lines.size() - 1 - i) * LINE_HEIGHT, 0);
+            displayEntities.get(i).teleport(newLineLocation);
+        }
     }
 
     public String getId() {

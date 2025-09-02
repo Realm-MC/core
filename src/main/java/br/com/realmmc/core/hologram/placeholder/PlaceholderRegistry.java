@@ -15,12 +15,7 @@ public class PlaceholderRegistry {
 
     private static final Map<String, Supplier<String>> placeholders = new ConcurrentHashMap<>();
 
-    /**
-     * Inicia os placeholders padrão, recebendo a instância do plugin para acesso seguro.
-     * @param plugin A instância da classe Main do Core.
-     */
     public static void initializeDefaults(Main plugin) {
-        // Agora, os placeholders usam a instância do plugin passada diretamente.
         registerPlaceholder("{online_players}", () -> String.valueOf(Bukkit.getOnlinePlayers().size()));
         registerPlaceholder("{server_name}", plugin::getServerName);
 
@@ -31,11 +26,7 @@ public class PlaceholderRegistry {
                 if (serverName != null && !serverName.isEmpty()) {
                     registerPlaceholder("{server_" + serverName.toLowerCase() + "_online}", () -> {
                         Document serverDoc = serversCollection.find(Filters.eq("_id", serverName)).first();
-                        if (serverDoc != null) {
-                            int playerCount = serverDoc.getInteger("player_count", 0);
-                            return String.valueOf(playerCount >= 0 ? playerCount : 0);
-                        }
-                        return "0";
+                        return serverDoc != null ? String.valueOf(Math.max(0, serverDoc.getInteger("player_count", 0))) : "0";
                     });
                 }
             }

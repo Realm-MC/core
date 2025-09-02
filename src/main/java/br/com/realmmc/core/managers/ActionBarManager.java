@@ -5,13 +5,9 @@ import br.com.realmmc.core.utils.ColorAPI;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList; // IMPORT ADICIONADO
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ActionBarManager {
@@ -21,7 +17,10 @@ public class ActionBarManager {
     private final String separator;
 
     public enum MessagePriority {
-        HIGH, MEDIUM, LOW
+        CRITICAL,
+        HIGH,
+        MEDIUM,
+        LOW
     }
 
     public ActionBarManager(Main plugin) {
@@ -38,7 +37,6 @@ public class ActionBarManager {
         Message newMessage = new Message(id, text, expiration);
 
         Map<MessagePriority, List<Message>> playerMessages = activeMessages.computeIfAbsent(player.getUniqueId(), k -> new EnumMap<>(MessagePriority.class));
-
         List<Message> messageList = playerMessages.computeIfAbsent(priority, k -> new CopyOnWriteArrayList<>());
 
         messageList.removeIf(msg -> msg.getId().equals(id));
@@ -47,7 +45,6 @@ public class ActionBarManager {
 
     public void clearMessage(Player player, String id) {
         if (player == null) return;
-
         Map<MessagePriority, List<Message>> playerMessages = activeMessages.get(player.getUniqueId());
         if (playerMessages != null) {
             playerMessages.values().forEach(list -> list.removeIf(msg -> msg.getId().equals(id)));
@@ -74,7 +71,6 @@ public class ActionBarManager {
 
                     if (playerMessages.isEmpty()) {
                         activeMessages.remove(uuid);
-                        // Limpa a action bar se não houver mais mensagens
                         sendRawActionBar(player, " ");
                         continue;
                     }
@@ -86,6 +82,10 @@ public class ActionBarManager {
     }
 
     private String composeMessage(Map<MessagePriority, List<Message>> messages) {
+        if (messages.containsKey(MessagePriority.CRITICAL) && !messages.get(MessagePriority.CRITICAL).isEmpty()) {
+            return messages.get(MessagePriority.CRITICAL).get(0).getText();
+        }
+
         return messages.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .flatMap(entry -> entry.getValue().stream())

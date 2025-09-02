@@ -34,7 +34,8 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
         setupHeader();
 
         ItemStack separatorPane = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
-                .setName(" ")
+                .setName(translations.getMessage("gui.lobby-preferences.separator-item.name"))
+                .setLore(getLoreFromConfig("gui.lobby-preferences.separator-item.lore"))
                 .build();
 
         for (int i = 9; i <= 17; i++) {

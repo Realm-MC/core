@@ -19,6 +19,7 @@ br/com/realmmc/core/scoreboard/DefaultScoreboardHandler.class
 br/com/realmmc/core/punishments/PunishmentReader.class
 br/com/realmmc/core/utils/SimilarityChecker.class
 br/com/realmmc/core/managers/SpamManager.class
+br/com/realmmc/core/task/CooldownTask.class
 br/com/realmmc/core/gui/PaginatedGui.class
 br/com/realmmc/core/npc/util/MineskinClient.class
 br/com/realmmc/core/utils/TimeFormatter.class
@@ -66,7 +67,6 @@ br/com/realmmc/core/managers/SoundManager$SoundInfo.class
 br/com/realmmc/core/managers/ActionBarManager$1.class
 br/com/realmmc/core/commands/ProfileCommand.class
 br/com/realmmc/core/gui/GuiItem.class
-br/com/realmmc/core/managers/CooldownManager$1.class
 br/com/realmmc/core/commands/NpcCommand.class
 br/com/realmmc/core/listeners/EconomyUpdateListener.class
 br/com/realmmc/core/listeners/PlayerListener.class

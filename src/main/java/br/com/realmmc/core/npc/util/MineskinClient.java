@@ -15,8 +15,7 @@ public class MineskinClient {
     private static final String MINESKIN_API = "https://api.mineskin.org/generate/url";
     private static final HttpClient client = HttpClient.newHttpClient();
 
-    public static CompletableFuture<NPCSkin> getSkinFromUrl(String url) {
-        // Retorna um futuro já completo com null se a URL for inválida
+    public CompletableFuture<NPCSkin> getSkinFromUrl(String url) {
         if (url == null || url.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }

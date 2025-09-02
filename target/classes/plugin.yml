@@ -4,7 +4,7 @@ main: br.com.realmmc.core.Main
 authors: [xxxlc]
 website: www.realmmc.com.br
 api-version: '1.21'
-depend: [Citizens, LuckPerms, ViaVersion, ProtocolLib]
+depend: [Citizens, LuckPerms, ViaVersion, ProtocolLib, SkinsRestorer]
 
 commands:
   feed:
@@ -28,6 +28,9 @@ commands:
   profile:
     description: Utilizado para abrir o menu do perfil.
     aliases: [perfil]
-  npc:
+  npcs:
     description: Gerencia os NPCs do servidor.
-    aliases: [npcs]
+  skin:
+    description: Utilizado para alterar a sua skin.
+  skins:
+    description: Utilizado para alterar a sua skin.
