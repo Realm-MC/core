@@ -8,16 +8,11 @@ import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.modules.SystemType;
-import br.com.realmmc.core.npc.NPCListener;
 import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
-import br.com.realmmc.core.users.GroupInfoReader;
-import br.com.realmmc.core.users.PurchaseHistoryReader;
-import br.com.realmmc.core.users.UserProfileReader;
-import br.com.realmmc.core.users.UserPreferenceManager;
-import br.com.realmmc.core.users.UserPreferenceReader;
+import br.com.realmmc.core.users.*;
 import br.com.realmmc.core.utils.PlayerResolver;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
@@ -78,6 +73,7 @@ public final class Main extends JavaPlugin {
 
         this.translationsManager = new TranslationsManager(this);
         this.soundManager = new SoundManager();
+
         try {
             this.databaseManager = new DatabaseManager(this);
         } catch (Exception e) {
@@ -93,6 +89,7 @@ public final class Main extends JavaPlugin {
         }
 
         setupViaVersion();
+        setupSkinsRestorer();
 
         this.serverConfigManager = new ServerConfigManager(this);
         this.userProfileReader = new UserProfileReader(this);
@@ -115,11 +112,14 @@ public final class Main extends JavaPlugin {
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
 
+        // Citizens + NPC Manager
         if (Bukkit.getPluginManager().getPlugin("Citizens") != null) {
             this.npcManager = new NPCManager(this);
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                getLogger().info("Carregando NPCs...");
+                npcManager.loadAndSpawnAll();
+            }, 20L); // delay de 1 segundo para mundos carregarem
         }
-
-        setupSkinsRestorer();
 
         new CoreAPI(this);
 
@@ -127,22 +127,8 @@ public final class Main extends JavaPlugin {
         activateDefaultModules();
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
-            getLogger().info("Carregando hologramas e NPCs...");
+            getLogger().info("Carregando hologramas...");
             hologramManager.loadHolograms();
-
-            if (npcManager != null && Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
-                npcManager.loadAndSpawnAll();
-                new NPCListener(this);
-            } else {
-                getLogger().info("Sistema de NPCs desativado pois o plugin Citizens não foi encontrado.");
-                PluginCommand npcCommand = getCommand("npcs");
-                if (npcCommand != null) {
-                    npcCommand.setExecutor((sender, command, label, args) -> {
-                        sender.sendMessage("§cO sistema de NPCs está desativado neste servidor.");
-                        return true;
-                    });
-                }
-            }
         }, 1L);
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
@@ -157,11 +143,16 @@ public final class Main extends JavaPlugin {
         if (this.hologramManager != null) {
             this.hologramManager.despawnAll();
         }
+        if (this.npcManager != null) {
+            this.npcManager.shutdown(); // encerra sync task dos NPCs
+        }
         if (databaseManager != null) {
             databaseManager.close();
         }
+
         getServer().getMessenger().unregisterIncomingPluginChannel(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+
         this.translationsManager.log(Level.INFO, "logs.plugin.disabled");
     }
 
@@ -193,6 +184,7 @@ public final class Main extends JavaPlugin {
         pm.registerEvents(vanishListener, this);
         pm.registerEvents(this.godManager, this);
         pm.registerEvents(maintenanceListener, this);
+        pm.registerEvents(new ServerLifecycleListener(this), this);
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand();
@@ -253,11 +245,18 @@ public final class Main extends JavaPlugin {
     }
 
     private void setupSkinsRestorer() {
-        if (getServer().getPluginManager().getPlugin("SkinsRestorer") != null) {
+        if (getServer().getPluginManager().getPlugin("SkinsRestorer") == null) {
+            getLogger().warning("SkinsRestorer não encontrado. Funcionalidades de skin estarão desativadas.");
+            return;
+        }
+        try {
             this.skinsRestorerApi = SkinsRestorerProvider.get();
-            getLogger().info("API do SkinsRestorer v15 conectada com sucesso.");
-        } else {
-            getLogger().warning("SkinsRestorer não encontrado. O comando /skin não funcionará.");
+            getLogger().info("API do SkinsRestorer conectada com sucesso.");
+        } catch (IllegalStateException e) {
+            getLogger().severe("FALHA ao conectar com a API do SkinsRestorer!");
+            getLogger().severe("MOTIVO: " + e.getMessage());
+            getLogger().severe("Verifique a configuração do SkinsRestorer (ProxyMode, Database). As funções de skin estarão desativadas.");
+            this.skinsRestorerApi = null;
         }
     }
 

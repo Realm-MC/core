@@ -1,4 +1,3 @@
-// PASTA: core/src/main/java/br/com/realmmc/core/managers/TagManager.java
 package br.com.realmmc.core.managers;
 
 import br.com.realmmc.core.Main;
@@ -20,6 +19,8 @@ public class TagManager {
 
     private final Main plugin;
     private final LuckPerms luckPerms;
+    private static final int MAX_PREFIX_LENGTH = 64; // Limite de segurança para o tamanho do prefixo
+    private static final int MAX_TEAM_NAME_LENGTH = 16; // Limite MÁXIMO para nomes de time
 
     public TagManager(Main plugin) {
         this.plugin = plugin;
@@ -41,18 +42,32 @@ public class TagManager {
     public void updatePlayerTag(Player targetPlayer) {
         if (!targetPlayer.isOnline()) return;
 
-        // --- LÓGICA REATORADA ---
-        // Busca o RealmPlayer do cache
         CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(targetPlayer).ifPresent(realmPlayer -> {
-            // Usa os dados já carregados do RealmPlayer
             int weight = realmPlayer.getGroupWeight();
             String prefix = realmPlayer.getPrefix();
-            String groupName = realmPlayer.getPrimaryGroup(); // Usado para nome do time
+            // Pega o nome do grupo principal do jogador, já sem cores.
+            String rawGroupName = ChatColor.stripColor(realmPlayer.getPrimaryGroup());
 
-            // O nome do time é formatado para garantir a ordem correta no TAB
-            String teamName = String.format("%04d_%s", 9999 - weight, groupName.replaceAll("§.", ""));
+            if (prefix != null) {
+                if (prefix.length() > MAX_PREFIX_LENGTH) {
+                    prefix = prefix.substring(0, MAX_PREFIX_LENGTH);
+                }
+            } else {
+                prefix = "";
+            }
 
-            // Itera sobre todos os jogadores online (os "espectadores")
+            // Cria o nome do time com base no peso e no nome do grupo
+            String teamName = String.format("%04d_%s", 9999 - weight, rawGroupName);
+
+            // ===================================================================================== //
+            //                                CORREÇÃO FINAL APLICADA AQUI                           //
+            // ===================================================================================== //
+            // Garante que o nome do time NUNCA exceda o limite de 16 caracteres do Minecraft.
+            if (teamName.length() > MAX_TEAM_NAME_LENGTH) {
+                teamName = teamName.substring(0, MAX_TEAM_NAME_LENGTH);
+            }
+            // ===================================================================================== //
+
             for (Player viewer : Bukkit.getOnlinePlayers()) {
                 Scoreboard viewerScoreboard = viewer.getScoreboard();
                 Team team = viewerScoreboard.getTeam(teamName);
@@ -61,19 +76,22 @@ public class TagManager {
                     team = viewerScoreboard.registerNewTeam(teamName);
                 }
 
-                if (prefix != null) {
-                    team.setPrefix(ColorAPI.format(prefix + ""));
-                    String lastColors = ChatColor.getLastColors(ColorAPI.format(prefix));
-                    if (!lastColors.isEmpty()) {
-                        ChatColor nameColor = ChatColor.getByChar(lastColors.charAt(1));
-                        if (nameColor != null && nameColor.isColor()) {
-                            team.setColor(nameColor);
-                        }
+                String formattedPrefix = ColorAPI.format(prefix);
+                if (!team.getPrefix().equals(formattedPrefix)) {
+                    team.setPrefix(formattedPrefix);
+                }
+
+                String lastColors = ChatColor.getLastColors(formattedPrefix);
+                if (!lastColors.isEmpty()) {
+                    ChatColor nameColor = ChatColor.getByChar(lastColors.charAt(lastColors.length() - 1));
+                    if (nameColor != null && nameColor.isColor() && team.getColor() != nameColor) {
+                        team.setColor(nameColor);
                     }
                 }
 
-                // Adiciona o jogador-alvo ao time na scoreboard do espectador
-                team.addEntry(targetPlayer.getName());
+                if (!team.hasEntry(targetPlayer.getName())) {
+                    team.addEntry(targetPlayer.getName());
+                }
             }
         });
     }
@@ -87,7 +105,6 @@ public class TagManager {
     private void onUserRankChange(UserPromoteEvent event) {
         Player player = Bukkit.getPlayer(event.getUser().getUniqueId());
         if (player != null && player.isOnline()) {
-            // Um delay é importante para garantir que o cache do RealmPlayer seja atualizado primeiro
             Bukkit.getScheduler().runTaskLater(plugin, () -> updatePlayerTag(player), 20L);
         }
     }
@@ -95,7 +112,6 @@ public class TagManager {
     private class TagListener implements Listener {
         @EventHandler
         public void onPlayerJoin(PlayerJoinEvent event) {
-            // Atualiza a tag de todos para todos, garantindo sincronia total com o novo jogador.
             Bukkit.getScheduler().runTaskLater(plugin, () -> updateAllPlayerViews(), 10L);
         }
     }

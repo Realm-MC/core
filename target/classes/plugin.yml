@@ -30,7 +30,4 @@ commands:
     aliases: [perfil]
   npcs:
     description: Gerencia os NPCs do servidor.
-  skin:
-    description: Utilizado para alterar a sua skin.
-  skins:
-    description: Utilizado para alterar a sua skin.
+    aliases: [npc]

@@ -7,14 +7,14 @@ npcs:
     action:
       type: 'SEND_SEQUENCED_MESSAGE'
       value:
-        - '&e[NPC] &bJanet&e: &fOlá &r{player_full_name}&f! Você está no &eLobby Principal&f!'
-        - '&e[NPC] &bJanet&e: &fEm frente você poderá entrar nos modos de jogo disponíveis.'
-        - '&e[NPC] &bJanet&e: &fOu você pode utilizar a bússola &eseletora de servidores &fe se conectar rapidamente a um modo de jogo.'
-        - '&e[NPC] &bJanet&e: &fAinda na sua hotbar, tem o &eseletor de lobbies &f, utilizado para trocar de lobby,'
-        - '&e[NPC] &bJanet&e: &fe por fim o &eseu perfil &fonde pode editar as suas &apreferências &fdeixando todo o seu personagem com a sua cara.'
-        - '&e[NPC] &bJanet&e: &fNo mesmo lugar você também consegue visualizar as suas &eestatísticas &fe as suas &cpunições &fdo servidor.'
-        - '&e[NPC] &bJanet&e: &fCaso goste do servidor e queira ajudar, você pode adquirir um pacote de &bVIP &fe de &6CASH &futilizando &b&n/vip&f para mais informações.'
-        - '&e[NPC] &bJanet&e: &fEsse lugar foi feito especialmente para você! Divirta-se.'
+        - 'npc-dialogue.janet.line1'
+        - 'npc-dialogue.janet.line2'
+        - 'npc-dialogue.janet.line3'
+        - 'npc-dialogue.janet.line4'
+        - 'npc-dialogue.janet.line5'
+        - 'npc-dialogue.janet.line6'
+        - 'npc-dialogue.janet.line7'
+        - 'npc-dialogue.janet.line8'
     location:
       ==: org.bukkit.Location
       world: lobby

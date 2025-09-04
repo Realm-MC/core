@@ -700,73 +700,53 @@ commands:
   fly:
     permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
   npc:
-    usage: "&cUtilize: /npc <criar|deletar|list|info>"
+    usage: "&cUtilize: /npc <criar|deletar|list|tphere|setskin|setaction>"
     player-only: "&cEste comando só pode ser executado por jogadores."
-    no-permission: "&cVocê não tem permissão para usar este comando."
-    invalid-subcommand: "&cSubcomando inválido. Utilize: /npc <criar|deletar|list|info>"
     create:
-      usage: "&cUtilize: /npc criar <id>"
-      success: "&aNPC '{id}' criado e salvo na sua localização atual!"
-      not-found-in-config: "&cO NPC com o ID '{id}' não foi encontrado no arquivo npcs.yml."
-      already-spawned: "&cEste NPC já está spawnado. Use /npc deletar {id} primeiro."
+      usage: "&cUse: /npc criar <id> <nome de exibição>"
+      success: "&aNPC '{id}' criado com sucesso na sua localização!"
+      already-exists: "&cJá existe um NPC com o ID '{id}'."
     delete:
-      usage: "&cUtilize: /npc deletar <id>"
-      success: "&aNPC '{id}' deletado com sucesso do mundo e da configuração!"
-      not-spawned: "&cO NPC com o ID '{id}' não está spawnado no mundo."
+      usage: "&cUse: /npc deletar <id>"
+      success: "&aNPC '{id}' deletado com sucesso!"
+      not-found: "&cNão foi encontrado um NPC com o ID '{id}'."
     list:
-      header: "&6Lista de NPCs definidos:"
-      line-format: "&7- &e{id} {status}"
-      status-spawned: "&a(Spawnado)"
-      status-not-spawned: "&c(Não Spawnado)"
-      empty: "&cNão há NPCs definidos no arquivo npcs.yml."
+      header: "&6Lista de NPCs existentes:"
+      line-format: "&7- &e{id} &f({display_name}&f)"
+      empty: "&cNão há NPCs criados neste servidor."
+    tphere:
+      usage: "&cUse: /npc tphere <id>"
+      success: "&aNPC '{id}' movido para sua localização."
+    setskin:
+      usage: "&cUse: /npc setskin <id> <nome_do_jogador>"
+      success: "&aSkin do NPC '{id}' atualizada para a do jogador '{player}'."
+      fail: "&cNão foi possível encontrar a skin do jogador '{player}' ou o NPC não existe."
+    setaction:
+      usage: "&cUse: /npc setaction <id> <TIPO> [argumentos...]"
+      success: "&aAção do NPC '{id}' definida para '{type}' com sucesso!"
+      invalid-type: "&cTipo de ação inválido. Tipos disponíveis: &f{types}"
+    setalert:
+      usage: "&cUse: /npc setalert <id> <NEVER|EVERYONE|FIRST> [texto do alerta]"
+      invalid-mode: "&cModo inválido. Use: NEVER, EVERYONE, ou FIRST."
+      text-required: "&cPara os modos EVERYONE e FIRST, você precisa especificar um texto."
+      success: "&aAlerta de clique para o NPC '{id}' definido para o modo '{mode}'."
     info:
-      usage: "&cUtilize: /npc info <id>"
-      not-found: "&cO NPC com o ID '{id}' não foi encontrado nas configurações."
+      usage: "&cUse: /npc info <id>"
       header: "&6Informações do NPC: &e{id}"
       line-name: "&7- Nome de Exibição: &f{display_name}"
-      line-server: "&7- Servidor: &f{server}"
-      line-world: "&7- Mundo: &f{world}"
-      line-action: "&7- Ação: &f{action_type} ({action_value_size} linhas)"
       line-location: "&7- Localização: &f{location}"
-      line-location-not-spawned: "&7- Localização: &cNão definida (use /npc criar)"
+      line-action-type: "&7- Tipo de Ação: &f{action_type}"
+      line-action-values: "&7- Valores da Ação ({count}):"
+      line-action-value-entry: "&f  - {value}"
+      line-no-action: "&7- Ação: &fNenhuma"
 
-skin:
-  usage:
-    main: "&cUtilize: /skin <nickname | limpar | historico>"
-    ban: "&cUtilize: /skin ban <nickname>"
-    unban: "&cUtilize: /skin unban <nickname>"
-  success:
-    set:
-      self: "&aSua skin foi alterada para a de &e{skin}&a!"
-      other: "&aVocê alterou a skin de &r{player} &apara a de &e{skin}&a!"
-    clear:
-      self: "&aSua skin foi restaurada para a original."
-      other: "&aVocê restaurou a skin de &r{player} &apara a original."
-    banned: "&aA skin &e{skin} &afoi banida com sucesso!"
-    unbanned: "&aA skin &e{skin} &afoi desbanida com sucesso!"
-  error:
-    api-not-found: "&cO sistema de skins não está funcionando no momento. Contate um administrador."
-    not-found: "&cA skin do jogador &e{skin} &cnão foi encontrada."
-    banned: "&cEsta skin (&e{skin}&c) está banida e não pode ser utilizada."
-  cooldown: "&cAguarde {time}s para alterar sua skin novamente!"
-  history:
-    header: "&6Histórico de skins de &r{player}&6:"
-    format: "&7- &e{skin} &7(em {date})"
-    empty: "&cO jogador &r{player} &cnão possui histórico de skins."
-  help:
-    champion:
-      - "&f"
-      - "&6Deseja trocar de skin?"
-      - "&7- &e/skin <nickname> &7Utilizar a skin deste nickname."
-      - "&7- &e/skin limpar &7Voltar para a sua skin original."
-      - "&7- &e/skin historico &7Ver o histórico de skins que você já utilizou."
-      - "&f"
-    admin:
-      - "&f"
-      - "&6Comandos de skins:"
-      - "&7- &e/skin <nickname> [usuário] &7Utilizar a skin deste nickname."
-      - "&7- &e/skin limpar [usuário] &7Voltar para a sua skin original."
-      - "&7- &e/skin historico [usuário] &7Ver o histórico de skins que você já utilizou."
-      - "&7- &e/skin ban <nickname> &7Banir uma skin de ser utilizada."
-      - "&7- &e/skin unban <nickname> &7Desbanir uma skin."
-      - "&f"
+npc-dialogue:
+  janet:
+    line1: '&e[NPC] &bJanet&e: &fOlá &r{player_full_name}&f! Você está no &eLobby Principal&f!'
+    line2: '&e[NPC] &bJanet&e: &fEm frente você poderá entrar nos modos de jogo disponíveis.'
+    line3: '&e[NPC] &bJanet&e: &fOu você pode utilizar a bússola &eseletora de servidores &fe se conectar rapidamente a um modo de jogo.'
+    line4: '&e[NPC] &bJanet&e: &fAinda na sua hotbar, tem o &eseletor de lobbies &f, utilizado para trocar de lobby,'
+    line5: '&e[NPC] &bJanet&e: &fe por fim o &eseu perfil &fonde pode editar as suas &apreferências &fdeixando todo o seu personagem com a sua cara.'
+    line6: '&e[NPC] &bJanet&e: &fNo mesmo lugar você também consegue visualizar as suas &eestatísticas &fe as suas &cpunições &fdo servidor.'
+    line7: '&e[NPC] &bJanet&e: &fCaso goste do servidor e queira ajudar, você pode adquirir um pacote de &bVIP &fe de &6CASH &futilizando &b&n/vip&f para mais informações.'
+    line8: '&e[NPC] &bJanet&e: &fEsse lugar foi feito especialmente para você! Divirta-se.'
