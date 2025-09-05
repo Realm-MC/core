@@ -21,8 +21,9 @@ public class NPC {
     private List<String> actionValues;
     private final String server;
     private ClickAlert clickAlert;
+    private boolean lookAtPlayer;
 
-    public NPC(String id, String displayName, Location location, String skinValue, String skinSignature, String skinUrl, String actionType, List<String> actionValues, String server, ClickAlert clickAlert) {
+    public NPC(String id, String displayName, Location location, String skinValue, String skinSignature, String skinUrl, String actionType, List<String> actionValues, String server, ClickAlert clickAlert, boolean lookAtPlayer) {
         this.id = id;
         this.displayName = displayName;
         this.location = location;
@@ -33,6 +34,7 @@ public class NPC {
         this.actionValues = actionValues;
         this.server = server;
         this.clickAlert = clickAlert;
+        this.lookAtPlayer = lookAtPlayer;
     }
 
     public String getId() { return id; }
@@ -45,6 +47,7 @@ public class NPC {
     public List<String> getActionValues() { return actionValues; }
     public String getServer() { return server; }
     public Optional<ClickAlert> getClickAlert() { return Optional.ofNullable(clickAlert); }
+    public boolean isLookAtPlayer() { return lookAtPlayer; }
 
     public void setDisplayName(String displayName) { this.displayName = displayName; }
     public void setLocation(Location location) { this.location = location; }
@@ -57,6 +60,7 @@ public class NPC {
         this.actionValues = actionValues;
     }
     public void setClickAlert(ClickAlert clickAlert) { this.clickAlert = clickAlert; }
+    public void setLookAtPlayer(boolean lookAtPlayer) { this.lookAtPlayer = lookAtPlayer; }
 
     public Document toDocument() {
         Document doc = new Document("_id", this.id)
@@ -66,7 +70,8 @@ public class NPC {
                 .append("skinSignature", this.skinSignature)
                 .append("actionType", this.actionType)
                 .append("actionValues", this.actionValues)
-                .append("server", this.server);
+                .append("server", this.server)
+                .append("lookAtPlayer", this.lookAtPlayer);
 
         if (this.clickAlert != null) {
             doc.append("clickAlert", new Document("mode", this.clickAlert.mode()).append("text", this.clickAlert.text()));
@@ -116,7 +121,8 @@ public class NPC {
                 doc.getString("actionType"),
                 doc.getList("actionValues", String.class),
                 doc.getString("server"),
-                clickAlert
+                clickAlert,
+                doc.getBoolean("lookAtPlayer", true)
         );
     }
 }

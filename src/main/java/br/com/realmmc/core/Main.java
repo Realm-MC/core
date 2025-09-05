@@ -112,13 +112,12 @@ public final class Main extends JavaPlugin {
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
 
-        // Citizens + NPC Manager
         if (Bukkit.getPluginManager().getPlugin("Citizens") != null) {
             this.npcManager = new NPCManager(this);
             Bukkit.getScheduler().runTaskLater(this, () -> {
                 getLogger().info("Carregando NPCs...");
                 npcManager.loadAndSpawnAll();
-            }, 20L); // delay de 1 segundo para mundos carregarem
+            }, 20L);
         }
 
         new CoreAPI(this);
@@ -134,6 +133,7 @@ public final class Main extends JavaPlugin {
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
+    // O resto da classe Main.java permanece o mesmo...
     @Override
     public void onDisable() {
         if (this.maintenanceLockdownManager != null) {
@@ -257,7 +257,6 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    // Getters
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }

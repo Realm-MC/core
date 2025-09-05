@@ -15,6 +15,7 @@ br/com/realmmc/core/listeners/VanishListener.class
 br/com/realmmc/core/utils/ItemBuilder.class
 br/com/realmmc/core/managers/TranslationsManager.class
 br/com/realmmc/core/managers/SoundManager.class
+br/com/realmmc/core/npc/actions/impl/OpenGuiAction.class
 br/com/realmmc/core/gui/profile/PrivacyPreferencesGUI.class
 br/com/realmmc/core/managers/CooldownManager.class
 br/com/realmmc/core/listeners/PreferenceUpdateListener.class

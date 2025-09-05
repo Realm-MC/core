@@ -45,14 +45,12 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
 
         String subCommand = args[0].toLowerCase();
 
-        // O comando 'sync' foi removido, então não pode ser executado pelo console.
         if (!(sender instanceof Player player)) {
             translations.sendMessage(sender, "commands.npc.player-only");
             return true;
         }
 
         switch (subCommand) {
-            // case "sync": handleSync(player); break; // REMOVIDO
             case "criar": handleCreate(player, args); break;
             case "deletar": handleDelete(player, args); break;
             case "list": handleList(player); break;
@@ -61,9 +59,46 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
             case "setaction": handleSetAction(player, args); break;
             case "info": handleInfo(player, args); break;
             case "setalert": handleSetAlert(player, args); break;
+            case "tp": handleTp(player, args); break;
+            case "togglelook": handleToggleLook(player, args); break;
             default: sendUsage(player); break;
         }
         return true;
+    }
+
+    private void handleToggleLook(Player player, String[] args) {
+        if (args.length != 2) {
+            player.sendMessage("§cUse: /npc togglelook <id>");
+            return;
+        }
+        String id = args[1];
+        npcManager.getNpc(id).ifPresentOrElse(npc -> {
+            boolean newState = !npc.isLookAtPlayer();
+            npc.setLookAtPlayer(newState);
+            npcManager.saveNpc(npc).thenRun(() -> {
+                npcManager.reconfigureNpc(id);
+                player.sendMessage("§aFoco no jogador para o NPC '" + id + "' foi " + (newState ? "§aativado" : "§cdesativado") + "§a.");
+                CoreAPI.getInstance().getSoundManager().playSuccess(player);
+            });
+        }, () -> translations.sendMessage(player, "commands.npc.delete.not-found", "id", id));
+    }
+
+    private void handleTp(Player player, String[] args) {
+        if (args.length != 2) {
+            player.sendMessage("§cUse: /npc tp <id>");
+            return;
+        }
+        String id = args[1];
+        npcManager.getNpc(id).ifPresentOrElse(npcDef -> {
+            net.citizensnpcs.api.npc.NPC citizensNpc = npcManager.findNpc(id);
+            if (citizensNpc != null && citizensNpc.isSpawned()) {
+                player.teleport(citizensNpc.getStoredLocation());
+                CoreAPI.getInstance().getSoundManager().playTeleport(player);
+                player.sendMessage("§aTeleportado para o NPC '" + id + "'.");
+            } else {
+                player.sendMessage("§cO NPC '" + id + "' não está spawnado no momento.");
+            }
+        }, () -> translations.sendMessage(player, "commands.npc.delete.not-found", "id", id));
     }
 
     private void handleCreate(Player player, String[] args) {
@@ -108,7 +143,6 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         });
     }
 
-    // LÓGICA ATUALIZADA PARA USAR A NOVA ESTRUTURA
     private void handleTpHere(Player player, String[] args) {
         if (args.length != 2) {
             translations.sendMessage(player, "commands.npc.tphere.usage");
@@ -116,13 +150,9 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         }
         String id = args[1];
         npcManager.getNpc(id).ifPresentOrElse(npcDefinition -> {
-            // 1. Atualiza a localização na definição do NPC
             npcDefinition.setLocation(player.getLocation());
-            // 2. Salva a nova localização no banco de dados
             npcManager.saveNpc(npcDefinition).thenRun(() -> {
-                // 3. Encontra a instância do NPC do Citizens que está no mundo
                 net.citizensnpcs.api.npc.NPC citizensNpc = npcManager.findNpc(id);
-                // 4. Se ele estiver spawnado, teleporta-o para um feedback visual imediato
                 if (citizensNpc != null && citizensNpc.isSpawned()) {
                     Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
                         citizensNpc.teleport(player.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
@@ -242,14 +272,13 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         final String prefix = args[args.length - 1].toLowerCase();
 
         if (args.length == 1) {
-            // Comando 'sync' removido do tab complete
-            return Stream.of("criar", "deletar", "list", "tphere", "setskin", "setaction", "info", "setalert")
+            return Stream.of("criar", "deletar", "list", "tphere", "setskin", "setaction", "info", "setalert", "tp", "togglelook")
                     .filter(s -> s.startsWith(prefix)).collect(Collectors.toList());
         }
 
         if (args.length == 2) {
             String sub = args[0].toLowerCase();
-            if (Stream.of("deletar", "tphere", "setskin", "setaction", "info", "setalert").anyMatch(sub::equals)) {
+            if (Stream.of("deletar", "tphere", "setskin", "setaction", "info", "setalert", "tp", "togglelook").anyMatch(sub::equals)) {
                 return npcManager.getAllNpcs().stream().map(NPC::getId)
                         .filter(id -> id.toLowerCase().startsWith(prefix)).collect(Collectors.toList());
             }

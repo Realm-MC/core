@@ -22,6 +22,9 @@ public class NPCListener implements Listener {
         Player player = event.getClicker();
         net.citizensnpcs.api.npc.NPC clickedNpc = event.getNPC();
 
+        // *** MELHORIA APLICADA AQUI ***
+        CoreAPI.getInstance().getSoundManager().playClick(player);
+
         if (ClickCooldown.hasCooldown(player.getUniqueId())) {
             return;
         }
@@ -32,18 +35,12 @@ public class NPCListener implements Listener {
             NPCManager npcManager = CoreAPI.getInstance().getNpcManager();
 
             npcManager.getNpc(npcId).ifPresent(definition -> {
-                // ===================================================================================== //
-                //                     CORREÇÃO 2: ATUALIZAÇÃO IMEDIATA DO HOLOGRAMA                     //
-                // ===================================================================================== //
-                // Agora, esperamos o clique ser incrementado no DB e, QUANDO TERMINAR (.thenRun),
-                // forçamos a atualização do holograma para o jogador.
                 npcManager.incrementClickCount(npcId, player).thenRun(() -> {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         CoreAPI.getInstance().getHologramManager().checkVisibilityForPlayer(player);
                     });
                 });
 
-                // Executa a ação do NPC (conversa)
                 npcManager.getActionRegistry()
                         .getAction(definition.getActionType())
                         .ifPresent(action -> action.execute(player, definition));

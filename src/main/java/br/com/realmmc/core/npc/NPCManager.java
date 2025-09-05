@@ -12,6 +12,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPCRegistry;
+import net.citizensnpcs.trait.LookClose;
 import net.citizensnpcs.trait.SkinTrait;
 import net.skinsrestorer.api.SkinsRestorer;
 import net.skinsrestorer.api.property.InputDataResult;
@@ -49,25 +50,18 @@ public class NPCManager {
         this.clickDataCollection = plugin.getDatabaseManager().getDatabase().getCollection("npc_click_data");
     }
 
-    /**
-     * Lógica de inicialização refeita para ser 100% autoritativa e evitar duplicações.
-     */
     public void loadAndSpawnAll() {
-        // 1. Carrega as definições do seu banco de dados (a fonte da verdade).
         npcCache.clear();
         collection.find().forEach(doc -> {
             NPC npc = NPC.fromDocument(doc);
             npcCache.put(npc.getId().toLowerCase(), npc);
         });
 
-        // 2. Cria um conjunto de IDs que este servidor deve gerenciar.
         Set<String> managedIdsOnThisServer = npcCache.values().stream()
                 .filter(def -> plugin.getServerName().equalsIgnoreCase(def.getServer()))
                 .map(def -> def.getId().toLowerCase())
                 .collect(Collectors.toSet());
 
-        // 3. LIMPEZA AGRESSIVA: Remove qualquer NPC da sessão anterior que seja gerenciado pelo nosso sistema.
-        // Isso garante que o estado do Citizens não interfira.
         List<net.citizensnpcs.api.npc.NPC> toDestroy = new ArrayList<>();
         for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
             if (npc.data().has("npc-id")) {
@@ -79,10 +73,9 @@ public class NPCManager {
         }
         if (!toDestroy.isEmpty()) {
             plugin.getLogger().info("Limpando " + toDestroy.size() + " NPC(s) da sessão anterior para evitar duplicatas...");
-            toDestroy.forEach(net.citizensnpcs.api.npc.NPC::destroy);
+            toDestroy.forEach(npc -> npc.destroy());
         }
 
-        // 4. CRIAÇÃO DO ZERO: Agora que o ambiente está limpo, cria os NPCs a partir do nosso banco de dados.
         plugin.getLogger().info("Criando " + managedIdsOnThisServer.size() + " NPC(s) a partir do banco de dados...");
         for (String id : managedIdsOnThisServer) {
             NPC definition = npcCache.get(id);
@@ -96,25 +89,31 @@ public class NPCManager {
         startSyncTask();
     }
 
-    /**
-     * Novo método auxiliar que sempre cria um NPC do zero a partir da definição.
-     */
     private void spawnFromDefinition(NPC definition) {
-        // Cria uma nova instância de NPC no Citizens
         net.citizensnpcs.api.npc.NPC npc = npcRegistry.createNPC(EntityType.PLAYER, ColorAPI.format(definition.getDisplayName()));
+        configureNpc(npc, definition);
+        npc.spawn(definition.getLocation());
+    }
 
-        // Aplica todas as nossas configurações
+    private void configureNpc(net.citizensnpcs.api.npc.NPC npc, NPC definition) {
         npc.data().set("npc-id", definition.getId().toLowerCase());
         npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.NAMEPLATE_VISIBLE, false);
         npc.setAlwaysUseNameHologram(false);
-
-        // **CRÍTICO:** Diz ao Citizens para NÃO salvar este NPC. Nosso DB é a fonte de verdade.
         npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.SHOULD_SAVE, false);
+        npc.setName(ColorAPI.format(definition.getDisplayName()));
+
+        if (!npc.hasTrait(LookClose.class)) {
+            npc.addTrait(LookClose.class);
+        }
+        LookClose lookCloseTrait = npc.getTrait(LookClose.class);
+        lookCloseTrait.lookClose(definition.isLookAtPlayer());
+        lookCloseTrait.setRange(8);
+
+        if (npc.getStoredLocation() == null || npc.getStoredLocation().distanceSquared(definition.getLocation()) > 0.1) {
+            npc.teleport(definition.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
+        }
 
         applySkin(npc, definition);
-
-        // Spawna o NPC no mundo
-        npc.spawn(definition.getLocation());
     }
 
     private void startSyncTask() {
@@ -133,7 +132,7 @@ public class NPCManager {
     }
 
     public CompletableFuture<Void> createNpc(String id, String displayName, Location location) {
-        NPC npcDefinition = new NPC(id, displayName, location, null, null, null, "NONE", Collections.emptyList(), plugin.getServerName(), null);
+        NPC npcDefinition = new NPC(id, displayName, location, null, null, null, "NONE", Collections.emptyList(), plugin.getServerName(), null, true);
         return saveNpc(npcDefinition).thenRun(() -> {
             npcCache.put(id.toLowerCase(), npcDefinition);
             spawnFromDefinition(npcDefinition);
@@ -165,6 +164,15 @@ public class NPCManager {
             }
         }
         return null;
+    }
+
+    public void reconfigureNpc(String id) {
+        getNpc(id).ifPresent(definition -> {
+            net.citizensnpcs.api.npc.NPC citizensNpc = findNpc(id);
+            if (citizensNpc != null) {
+                configureNpc(citizensNpc, definition);
+            }
+        });
     }
 
     public void applySkin(net.citizensnpcs.api.npc.NPC npc, NPC definition) {

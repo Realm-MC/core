@@ -65,6 +65,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/NPCAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/ConnectServerAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/ConsoleCommandAction.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/OpenGuiAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/PlayerCommandAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/SendMessageAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/SendSequencedMessageAction.java

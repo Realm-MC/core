@@ -12,12 +12,12 @@ public class ActionRegistry {
     private final Map<String, NPCAction> actionMap = new HashMap<>();
 
     public ActionRegistry() {
-        // Registra todas as ações padrão
         register("PLAYER_COMMAND", new PlayerCommandAction());
         register("CONSOLE_COMMAND", new ConsoleCommandAction());
         register("SEND_MESSAGE", new SendMessageAction());
         register("SEND_SEQUENCED_MESSAGE", new SendSequencedMessageAction());
         register("CONNECT_SERVER", new ConnectServerAction());
+        register("OPEN_GUI", new OpenGuiAction());
     }
 
     public void register(String name, NPCAction action) {
