@@ -4,7 +4,7 @@ import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.managers.TranslationsManager;
 import br.com.realmmc.core.npc.NPC;
 import br.com.realmmc.core.npc.NPCManager;
-import br.com.realmmc.core.utils.ColorAPI;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -45,17 +45,14 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
 
         String subCommand = args[0].toLowerCase();
 
+        // O comando 'sync' foi removido, então não pode ser executado pelo console.
         if (!(sender instanceof Player player)) {
-            if (subCommand.equals("sync")) {
-                handleSync(sender);
-            } else {
-                translations.sendMessage(sender, "commands.npc.player-only");
-            }
+            translations.sendMessage(sender, "commands.npc.player-only");
             return true;
         }
 
         switch (subCommand) {
-            case "sync": handleSync(player); break;
+            // case "sync": handleSync(player); break; // REMOVIDO
             case "criar": handleCreate(player, args); break;
             case "deletar": handleDelete(player, args); break;
             case "list": handleList(player); break;
@@ -67,13 +64,6 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
             default: sendUsage(player); break;
         }
         return true;
-    }
-
-    private void handleSync(CommandSender sender) {
-        sender.sendMessage(ColorAPI.format("&eSincronizando NPCs do arquivo npcs.yml para o MongoDB..."));
-        npcManager.syncFromFile().thenAccept(count -> {
-            sender.sendMessage(ColorAPI.format("&aSincronização concluída! " + count + " NPCs foram processados."));
-        });
     }
 
     private void handleCreate(Player player, String[] args) {
@@ -118,16 +108,26 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         });
     }
 
+    // LÓGICA ATUALIZADA PARA USAR A NOVA ESTRUTURA
     private void handleTpHere(Player player, String[] args) {
         if (args.length != 2) {
             translations.sendMessage(player, "commands.npc.tphere.usage");
             return;
         }
         String id = args[1];
-        npcManager.getNpc(id).ifPresentOrElse(npc -> {
-            npc.setLocation(player.getLocation());
-            npcManager.saveNpc(npc).thenRun(() -> {
-                npcManager.spawnOrUpdateNPC(npc);
+        npcManager.getNpc(id).ifPresentOrElse(npcDefinition -> {
+            // 1. Atualiza a localização na definição do NPC
+            npcDefinition.setLocation(player.getLocation());
+            // 2. Salva a nova localização no banco de dados
+            npcManager.saveNpc(npcDefinition).thenRun(() -> {
+                // 3. Encontra a instância do NPC do Citizens que está no mundo
+                net.citizensnpcs.api.npc.NPC citizensNpc = npcManager.findNpc(id);
+                // 4. Se ele estiver spawnado, teleporta-o para um feedback visual imediato
+                if (citizensNpc != null && citizensNpc.isSpawned()) {
+                    Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), () -> {
+                        citizensNpc.teleport(player.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
+                    });
+                }
                 translations.sendMessage(player, "commands.npc.tphere.success", "id", id);
             });
         }, () -> translations.sendMessage(player, "commands.npc.delete.not-found", "id", id));
@@ -242,7 +242,8 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         final String prefix = args[args.length - 1].toLowerCase();
 
         if (args.length == 1) {
-            return Stream.of("sync", "criar", "deletar", "list", "tphere", "setskin", "setaction", "info", "setalert")
+            // Comando 'sync' removido do tab complete
+            return Stream.of("criar", "deletar", "list", "tphere", "setskin", "setaction", "info", "setalert")
                     .filter(s -> s.startsWith(prefix)).collect(Collectors.toList());
         }
 

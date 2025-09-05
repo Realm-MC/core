@@ -21,19 +21,15 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class NPCManager {
 
@@ -53,136 +49,72 @@ public class NPCManager {
         this.clickDataCollection = plugin.getDatabaseManager().getDatabase().getCollection("npc_click_data");
     }
 
-    // ===================================================== //
-    //      CARREGAMENTO E RECONCILIAÇÃO DE NPCs            //
-    // ===================================================== //
+    /**
+     * Lógica de inicialização refeita para ser 100% autoritativa e evitar duplicações.
+     */
     public void loadAndSpawnAll() {
+        // 1. Carrega as definições do seu banco de dados (a fonte da verdade).
+        npcCache.clear();
         collection.find().forEach(doc -> {
             NPC npc = NPC.fromDocument(doc);
             npcCache.put(npc.getId().toLowerCase(), npc);
         });
 
-        Set<String> managedIds = npcCache.keySet();
-        List<net.citizensnpcs.api.npc.NPC> toDestroy = new ArrayList<>();
+        // 2. Cria um conjunto de IDs que este servidor deve gerenciar.
+        Set<String> managedIdsOnThisServer = npcCache.values().stream()
+                .filter(def -> plugin.getServerName().equalsIgnoreCase(def.getServer()))
+                .map(def -> def.getId().toLowerCase())
+                .collect(Collectors.toSet());
 
-        for (net.citizensnpcs.api.npc.NPC citizensNpc : npcRegistry) {
-            if (citizensNpc.data().has("npc-id")) {
-                String id = citizensNpc.data().get("npc-id").toString();
-                if (!managedIds.contains(id.toLowerCase())) {
-                    toDestroy.add(citizensNpc);
+        // 3. LIMPEZA AGRESSIVA: Remove qualquer NPC da sessão anterior que seja gerenciado pelo nosso sistema.
+        // Isso garante que o estado do Citizens não interfira.
+        List<net.citizensnpcs.api.npc.NPC> toDestroy = new ArrayList<>();
+        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
+            if (npc.data().has("npc-id")) {
+                String id = npc.data().get("npc-id");
+                if (managedIdsOnThisServer.contains(id.toLowerCase())) {
+                    toDestroy.add(npc);
                 }
             }
         }
-
         if (!toDestroy.isEmpty()) {
-            plugin.getLogger().info("Limpando " + toDestroy.size() + " NPC(s) órfão(s) do Citizens.");
+            plugin.getLogger().info("Limpando " + toDestroy.size() + " NPC(s) da sessão anterior para evitar duplicatas...");
             toDestroy.forEach(net.citizensnpcs.api.npc.NPC::destroy);
         }
 
-        for (NPC definition : npcCache.values()) {
-            if (definition.getServer() != null && plugin.getServerName().equalsIgnoreCase(definition.getServer())) {
-                spawnOrUpdateNPC(definition);
+        // 4. CRIAÇÃO DO ZERO: Agora que o ambiente está limpo, cria os NPCs a partir do nosso banco de dados.
+        plugin.getLogger().info("Criando " + managedIdsOnThisServer.size() + " NPC(s) a partir do banco de dados...");
+        for (String id : managedIdsOnThisServer) {
+            NPC definition = npcCache.get(id);
+            if (definition != null && definition.getLocation() != null && definition.getLocation().getWorld() != null) {
+                spawnFromDefinition(definition);
+            } else {
+                plugin.getLogger().warning("NPC '" + id + "' não pode ser criado (localização inválida).");
             }
         }
+
         startSyncTask();
     }
 
-    public net.citizensnpcs.api.npc.NPC findNpc(String id) {
-        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
-            Object data = npc.data().get("npc-id");
-            if (data != null && id.equalsIgnoreCase(data.toString())) {
-                return npc;
-            }
-        }
-        return null;
-    }
+    /**
+     * Novo método auxiliar que sempre cria um NPC do zero a partir da definição.
+     */
+    private void spawnFromDefinition(NPC definition) {
+        // Cria uma nova instância de NPC no Citizens
+        net.citizensnpcs.api.npc.NPC npc = npcRegistry.createNPC(EntityType.PLAYER, ColorAPI.format(definition.getDisplayName()));
 
-    public void spawnOrUpdateNPC(NPC definition) {
-        net.citizensnpcs.api.npc.NPC npc = findNpc(definition.getId());
-
-        if (npc == null) {
-            if (definition.getLocation() == null || definition.getLocation().getWorld() == null) {
-                plugin.getLogger().warning("NPC '" + definition.getId() + "' não pode ser criado pois sua localização é inválida.");
-                return;
-            }
-            npc = npcRegistry.createNPC(EntityType.PLAYER, ColorAPI.format(definition.getDisplayName()));
-            npc.spawn(definition.getLocation());
-        } else {
-            if (definition.getLocation() != null && !npc.getStoredLocation().equals(definition.getLocation())) {
-                npc.teleport(definition.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
-            }
-            npc.setName(ColorAPI.format(definition.getDisplayName()));
-        }
-
-        npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.NAMEPLATE_VISIBLE, false);
+        // Aplica todas as nossas configurações
         npc.data().set("npc-id", definition.getId().toLowerCase());
+        npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.NAMEPLATE_VISIBLE, false);
         npc.setAlwaysUseNameHologram(false);
+
+        // **CRÍTICO:** Diz ao Citizens para NÃO salvar este NPC. Nosso DB é a fonte de verdade.
+        npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.SHOULD_SAVE, false);
+
         applySkin(npc, definition);
-    }
 
-    private net.citizensnpcs.api.npc.NPC findNpcById(String id) {
-        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
-            if (id.equalsIgnoreCase(npc.data().get("npc-id"))) {
-                return npc;
-            }
-        }
-        return null;
-    }
-
-    public CompletableFuture<Void> deleteNpc(String id) {
-        return CompletableFuture.runAsync(() -> {
-            net.citizensnpcs.api.npc.NPC npcToDestroy = findNpcById(id);
-
-            CoreAPI.getInstance().getHologramManager().deleteHologram("npc_" + id.toLowerCase());
-            collection.deleteOne(Filters.eq("_id", id));
-            npcCache.remove(id.toLowerCase());
-
-            if (npcToDestroy != null) {
-                Bukkit.getScheduler().runTask(plugin, () -> npcToDestroy.destroy()); // fix destroy()
-            }
-        });
-    }
-
-    public CompletableFuture<Integer> syncFromFile() {
-        File configFile = new File(plugin.getDataFolder(), "npcs.yml");
-        if (!configFile.exists()) return CompletableFuture.completedFuture(0);
-        FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-        ConfigurationSection section = config.getConfigurationSection("npcs");
-        if (section == null) return CompletableFuture.completedFuture(0);
-
-        MineskinClient mineskin = new MineskinClient();
-        AtomicInteger count = new AtomicInteger(0);
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        for (String id : section.getKeys(false)) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                String skinUrl = section.getString("npcs." + id + ".skin-url");
-                NPCSkin skin = mineskin.getSkinFromUrl(skinUrl).join();
-                String displayName = section.getString("npcs." + id + ".display-name");
-                String server = section.getString("npcs." + id + ".server");
-                String actionType = section.getString("npcs." + id + ".action.type", "NONE");
-                List<String> actionValues = section.getStringList("npcs." + id + ".action.value");
-                Location location = section.getLocation("npcs." + id + ".location");
-                NPC.ClickAlert clickAlert = null;
-                if (section.isConfigurationSection("npcs." + id + ".click-alert")) {
-                    String mode = section.getString("npcs." + id + ".click-alert.mode", "NEVER");
-                    String text = section.getString("npcs." + id + ".click-alert.text", "");
-                    clickAlert = new NPC.ClickAlert(mode, text);
-                }
-                NPC npc = new NPC(id, displayName, location,
-                        skin != null ? skin.value() : null,
-                        skin != null ? skin.signature() : null,
-                        skinUrl, actionType, actionValues, server, clickAlert);
-                saveNpc(npc).join();
-                npcCache.put(id.toLowerCase(), npc);
-                if (plugin.getServerName().equalsIgnoreCase(server)) {
-                    Bukkit.getScheduler().runTask(plugin, () -> spawnOrUpdateNPC(npc));
-                }
-                count.incrementAndGet();
-            });
-            futures.add(future);
-        }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(v -> count.get());
+        // Spawna o NPC no mundo
+        npc.spawn(definition.getLocation());
     }
 
     private void startSyncTask() {
@@ -190,7 +122,7 @@ public class NPCManager {
         syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
                 if (npc.isSpawned() && npc.data().has("npc-id")) {
-                    String id = npc.data().get("npc-id").toString();
+                    String id = npc.data().get("npc-id");
                     CoreAPI.getInstance().getHologramManager().getHologram("npc_" + id.toLowerCase()).ifPresent(hologram -> {
                         Location newHoloLocation = npc.getStoredLocation().clone().add(0, 2.1, 0);
                         hologram.setBaseLocation(newHoloLocation);
@@ -200,26 +132,39 @@ public class NPCManager {
         }, 40L, 10L);
     }
 
-    public void shutdown() {
-        if (syncTask != null) {
-            syncTask.cancel();
-            syncTask = null;
-        }
+    public CompletableFuture<Void> createNpc(String id, String displayName, Location location) {
+        NPC npcDefinition = new NPC(id, displayName, location, null, null, null, "NONE", Collections.emptyList(), plugin.getServerName(), null);
+        return saveNpc(npcDefinition).thenRun(() -> {
+            npcCache.put(id.toLowerCase(), npcDefinition);
+            spawnFromDefinition(npcDefinition);
+        });
     }
 
-    public CompletableFuture<Void> createNpc(String id, String displayName, Location location) {
-        NPC npc = new NPC(id, displayName, location, null, null, null,
-                "NONE", Collections.emptyList(), plugin.getServerName(), null);
-        return saveNpc(npc).thenRun(() -> {
-            npcCache.put(id.toLowerCase(), npc);
-            spawnOrUpdateNPC(npc);
+    public CompletableFuture<Void> deleteNpc(String id) {
+        return CompletableFuture.runAsync(() -> {
+            net.citizensnpcs.api.npc.NPC npcToDestroy = findNpc(id);
+            CoreAPI.getInstance().getHologramManager().deleteHologram("npc_" + id.toLowerCase());
+            collection.deleteOne(Filters.eq("_id", id));
+            npcCache.remove(id.toLowerCase());
+            if (npcToDestroy != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> npcToDestroy.destroy());
+            }
         });
     }
 
     public CompletableFuture<Void> saveNpc(NPC npc) {
-        return CompletableFuture.runAsync(() ->
-                collection.replaceOne(Filters.eq("_id", npc.getId()), npc.toDocument(), new ReplaceOptions().upsert(true))
-        );
+        return CompletableFuture.runAsync(() -> {
+            collection.replaceOne(Filters.eq("_id", npc.getId()), npc.toDocument(), new ReplaceOptions().upsert(true));
+        });
+    }
+
+    public net.citizensnpcs.api.npc.NPC findNpc(String id) {
+        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
+            if (id.equalsIgnoreCase(npc.data().get("npc-id"))) {
+                return npc;
+            }
+        }
+        return null;
     }
 
     public void applySkin(net.citizensnpcs.api.npc.NPC npc, NPC definition) {
@@ -235,8 +180,9 @@ public class NPCManager {
                 if (skinData != null) {
                     definition.setSkin(skinData.value(), skinData.signature());
                     saveNpc(definition);
-                    Bukkit.getScheduler().runTask(plugin, () ->
-                            skinTrait.setSkinPersistent(definition.getId(), skinData.signature(), skinData.value()));
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        skinTrait.setSkinPersistent(definition.getId(), skinData.signature(), skinData.value());
+                    });
                 }
             });
         }
@@ -259,11 +205,13 @@ public class NPCManager {
                 saveNpc(npcDef).join();
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     net.citizensnpcs.api.npc.NPC npc = findNpc(npcId);
-                    if (npc != null) applySkin(npc, npcDef);
+                    if (npc != null) {
+                        applySkin(npc, npcDef);
+                    }
                 });
                 return true;
             } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "Erro ao buscar a skin do jogador via SkinsRestorer: " + playerName, e);
+                plugin.getLogger().log(Level.SEVERE, "Ocorreu um erro ao buscar a skin do jogador via SkinsRestorer: " + playerName, e);
                 return false;
             }
         });

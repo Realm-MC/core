@@ -143,9 +143,6 @@ public final class Main extends JavaPlugin {
         if (this.hologramManager != null) {
             this.hologramManager.despawnAll();
         }
-        if (this.npcManager != null) {
-            this.npcManager.shutdown(); // encerra sync task dos NPCs
-        }
         if (databaseManager != null) {
             databaseManager.close();
         }
