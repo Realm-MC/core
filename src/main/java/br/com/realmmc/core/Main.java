@@ -8,6 +8,7 @@ import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.modules.SystemType;
+import br.com.realmmc.core.npc.NPCListener;
 import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
@@ -112,12 +113,9 @@ public final class Main extends JavaPlugin {
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
 
-        if (Bukkit.getPluginManager().getPlugin("Citizens") != null) {
+        if (Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
             this.npcManager = new NPCManager(this);
-            Bukkit.getScheduler().runTaskLater(this, () -> {
-                getLogger().info("Carregando NPCs...");
-                npcManager.loadAndSpawnAll();
-            }, 20L);
+            // O carregamento agora é feito pelo ServerLifecycleListener para garantir que o mundo já carregou.
         }
 
         new CoreAPI(this);
@@ -125,15 +123,9 @@ public final class Main extends JavaPlugin {
         registerComponents();
         activateDefaultModules();
 
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            getLogger().info("Carregando hologramas...");
-            hologramManager.loadHolograms();
-        }, 1L);
-
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
-    // O resto da classe Main.java permanece o mesmo...
     @Override
     public void onDisable() {
         if (this.maintenanceLockdownManager != null) {
@@ -202,10 +194,12 @@ public final class Main extends JavaPlugin {
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
 
-        NpcCommand npcExecutor = new NpcCommand();
-        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npcs"));
-        npcCommand.setExecutor(npcExecutor);
-        npcCommand.setTabCompleter(npcExecutor);
+        if (Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
+            NpcCommand npcExecutor = new NpcCommand();
+            PluginCommand npcCommand = Objects.requireNonNull(getCommand("npcs"));
+            npcCommand.setExecutor(npcExecutor);
+            npcCommand.setTabCompleter(npcExecutor);
+        }
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
@@ -222,7 +216,6 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:kick");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
-        getServer().getMessenger().registerOutgoingPluginChannel(this, "core:preference_applied");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "core:punishment_notify");
     }
 

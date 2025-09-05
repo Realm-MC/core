@@ -2,6 +2,9 @@ package br.com.realmmc.core.npc;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
+import br.com.realmmc.core.hologram.Hologram;
+import br.com.realmmc.core.npc.NPC;
+import br.com.realmmc.core.npc.NPCSkin;
 import br.com.realmmc.core.npc.actions.ActionRegistry;
 import br.com.realmmc.core.npc.util.MineskinClient;
 import br.com.realmmc.core.utils.ColorAPI;
@@ -62,18 +65,16 @@ public class NPCManager {
                 .map(def -> def.getId().toLowerCase())
                 .collect(Collectors.toSet());
 
+        // LÓGICA ANTI-DUPLICAÇÃO: Limpa NPCs gerenciados de sessões anteriores.
         List<net.citizensnpcs.api.npc.NPC> toDestroy = new ArrayList<>();
         for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
             if (npc.data().has("npc-id")) {
-                String id = npc.data().get("npc-id");
-                if (managedIdsOnThisServer.contains(id.toLowerCase())) {
-                    toDestroy.add(npc);
-                }
+                toDestroy.add(npc);
             }
         }
         if (!toDestroy.isEmpty()) {
             plugin.getLogger().info("Limpando " + toDestroy.size() + " NPC(s) da sessão anterior para evitar duplicatas...");
-            toDestroy.forEach(npc -> npc.destroy());
+            toDestroy.forEach(net.citizensnpcs.api.npc.NPC::destroy);
         }
 
         plugin.getLogger().info("Criando " + managedIdsOnThisServer.size() + " NPC(s) a partir do banco de dados...");
@@ -109,7 +110,7 @@ public class NPCManager {
         lookCloseTrait.lookClose(definition.isLookAtPlayer());
         lookCloseTrait.setRange(8);
 
-        if (npc.getStoredLocation() == null || npc.getStoredLocation().distanceSquared(definition.getLocation()) > 0.1) {
+        if (npc.getStoredLocation() == null || !npc.getStoredLocation().equals(definition.getLocation())) {
             npc.teleport(definition.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
         }
 

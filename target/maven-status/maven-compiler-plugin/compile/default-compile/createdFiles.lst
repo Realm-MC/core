@@ -3,6 +3,7 @@ br/com/realmmc/core/npc/actions/impl/PlayerCommandAction.class
 br/com/realmmc/core/commands/TeleportCommand.class
 br/com/realmmc/core/managers/TagManager$TagListener.class
 br/com/realmmc/core/managers/TagManager.class
+br/com/realmmc/core/hologram/line/TextLine$Builder.class
 br/com/realmmc/core/gui/profile/PaginatedProfileMenuGUI.class
 br/com/realmmc/core/listeners/OpenGuiListener.class
 br/com/realmmc/core/npc/NPCManager.class
@@ -19,18 +20,21 @@ br/com/realmmc/core/npc/actions/impl/OpenGuiAction.class
 br/com/realmmc/core/gui/profile/PrivacyPreferencesGUI.class
 br/com/realmmc/core/managers/CooldownManager.class
 br/com/realmmc/core/listeners/PreferenceUpdateListener.class
+br/com/realmmc/core/hologram/line/HologramLine.class
 br/com/realmmc/core/npc/actions/ActionType.class
 br/com/realmmc/core/npc/actions/impl/ConnectServerAction.class
 br/com/realmmc/core/gui/profile/RankupPreferencesGUI.class
 br/com/realmmc/core/utils/PlayerResolver.class
 br/com/realmmc/core/commands/FeedCommand.class
 br/com/realmmc/core/commands/HealCommand.class
+br/com/realmmc/core/hologram/packets/HologramPacketController.class
 br/com/realmmc/core/managers/SoundManager$SoundInfo.class
 br/com/realmmc/core/commands/ProfileCommand.class
 br/com/realmmc/core/gui/GuiItem.class
 br/com/realmmc/core/commands/NpcCommand.class
 br/com/realmmc/core/npc/actions/impl/ConsoleCommandAction.class
 br/com/realmmc/core/listeners/PlayerListener.class
+br/com/realmmc/core/hologram/Hologram$1.class
 br/com/realmmc/core/listeners/ActionBarListener.class
 br/com/realmmc/core/npc/actions/impl/SendSequencedMessageAction.class
 br/com/realmmc/core/gui/GuiManager.class
@@ -49,6 +53,7 @@ br/com/realmmc/core/gui/profile/PreferencesGUI.class
 br/com/realmmc/core/npc/NPC.class
 br/com/realmmc/core/Main.class
 br/com/realmmc/core/commands/GamemodeCommand.class
+br/com/realmmc/core/hologram/line/ItemLine.class
 br/com/realmmc/core/listeners/TitleBroadcastListener.class
 br/com/realmmc/core/gui/profile/LobbyPreferencesGUI.class
 br/com/realmmc/core/listeners/SoundListener.class
@@ -62,6 +67,7 @@ br/com/realmmc/core/managers/SpamManager.class
 br/com/realmmc/core/task/CooldownTask.class
 br/com/realmmc/core/npc/util/MineskinClient.class
 br/com/realmmc/core/utils/JsonMessage.class
+br/com/realmmc/core/hologram/animation/Animation.class
 br/com/realmmc/core/users/UserPreferenceReader.class
 br/com/realmmc/core/commands/TeleportHereCommand.class
 br/com/realmmc/core/npc/NPCAction.class
@@ -81,10 +87,12 @@ br/com/realmmc/core/gui/profile/ChatPreferencesGUI.class
 br/com/realmmc/core/managers/MaintenanceLockdownManager.class
 br/com/realmmc/core/users/GroupInfoReader.class
 br/com/realmmc/core/users/UserPreferenceManager.class
+br/com/realmmc/core/hologram/line/ItemLine$Builder.class
 br/com/realmmc/core/api/CoreAPI.class
 br/com/realmmc/core/managers/PlayerDataManager.class
 br/com/realmmc/core/scoreboard/DefaultScoreboardManager.class
 br/com/realmmc/core/gui/profile/PurchaseHistoryGUI.class
+br/com/realmmc/core/hologram/line/TextLine.class
 br/com/realmmc/core/listeners/DefaultChatListener.class
 br/com/realmmc/core/listeners/MaintenanceLockdownListener.class
 br/com/realmmc/core/managers/ActionBarManager$MessagePriority.class
@@ -94,6 +102,7 @@ br/com/realmmc/core/users/PurchaseHistoryReader.class
 br/com/realmmc/core/hologram/HologramManager.class
 br/com/realmmc/core/managers/ServerConfigManager.class
 br/com/realmmc/core/managers/DatabaseManager.class
+br/com/realmmc/core/hologram/animation/OrbitAnimation.class
 br/com/realmmc/core/listeners/ServerLifecycleListener.class
 br/com/realmmc/core/npc/actions/NPCAction.class
 br/com/realmmc/core/listeners/VanishListener$1.class

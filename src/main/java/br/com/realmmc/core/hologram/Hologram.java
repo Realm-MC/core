@@ -1,116 +1,109 @@
 package br.com.realmmc.core.hologram;
 
-import br.com.realmmc.core.hologram.placeholder.PlaceholderRegistry;
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedDataValue;
-import com.comphenix.protocol.wrappers.WrappedDataWatcher;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
+import br.com.realmmc.core.Main;
+import br.com.realmmc.core.hologram.line.HologramLine;
+import br.com.realmmc.core.hologram.line.ItemLine;
 import org.bukkit.Location;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class Hologram {
 
     private final String id;
     private Location baseLocation;
-    private List<String> defaultLines = new CopyOnWriteArrayList<>();
-    private final Map<UUID, List<Integer>> playerVisibleEntities = new ConcurrentHashMap<>();
-    private static final double LINE_HEIGHT = 0.3;
-    private static final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-    private static final AtomicInteger fallbackEntityId = new AtomicInteger(Integer.MAX_VALUE / 2);
+    private final List<HologramLine> defaultLines = new ArrayList<>();
+    // ✅ Cache para a lógica anti-flicker
+    private final Map<UUID, List<String>> lastSentLines = new ConcurrentHashMap<>();
+    private final Map<UUID, List<HologramLine>> playerVisibleLines = new ConcurrentHashMap<>();
+    private final Map<UUID, BukkitTask> animationTasks = new ConcurrentHashMap<>();
+    private final Main plugin;
 
-    public Hologram(String id, Location location, List<String> lines) {
+    public Hologram(String id, Location location, Main plugin) {
         this.id = id;
         this.baseLocation = location;
-        this.defaultLines.addAll(lines);
+        this.plugin = plugin;
     }
 
-    public void updateForPlayer(Player player, List<String> lines) {
+    public void addLine(HologramLine line) {
+        this.defaultLines.add(line);
+        line.setHologram(this);
+    }
+
+    // Método principal que agora é inteligente
+    public void showOrUpdate(Player player, List<HologramLine> newLines) {
+        List<String> newLinesAsText = newLines.stream().map(Object::toString).collect(Collectors.toList());
+
+        // ✅ LÓGICA ANTI-FLICKER: Compara as linhas novas com as que já foram enviadas
+        if (lastSentLines.getOrDefault(player.getUniqueId(), Collections.emptyList()).equals(newLinesAsText)) {
+            return; // Se forem iguais, não faz nada, evitando o flicker.
+        }
+
+        // Se mudou, despawna as linhas antigas
         despawn(player);
-        if (baseLocation.getWorld() == null || !player.getWorld().equals(baseLocation.getWorld())) {
-            return;
+
+        // ✅ LÓGICA DE EMPILHAMENTO CORRIGIDA
+        double currentY = this.baseLocation.getY();
+        List<HologramLine> spawnedLines = new ArrayList<>();
+        // Itera normalmente, de cima para baixo
+        for (HologramLine line : newLines) {
+            Location lineLocation = this.baseLocation.clone();
+            lineLocation.setY(currentY);
+
+            line.setHologram(this);
+            line.spawn(player, lineLocation);
+            spawnedLines.add(line);
+
+            // Subtrai a altura para a próxima linha ficar abaixo
+            currentY -= line.getHeight();
+
+            if (line instanceof ItemLine itemLine && itemLine.hasAnimation()) {
+                startAnimationFor(player, itemLine);
+            }
         }
-        List<Integer> entityIds = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i++) {
-            int entityId = fallbackEntityId.decrementAndGet();
-            entityIds.add(entityId);
-            Location lineLocation = baseLocation.clone().add(0, (lines.size() - 1 - i) * LINE_HEIGHT, 0);
-            sendSpawnPacket(player, entityId, lineLocation);
-            sendMetadataPacket(player, entityId, lines.get(i));
-        }
-        playerVisibleEntities.put(player.getUniqueId(), entityIds);
+
+        // Atualiza o cache com as novas informações
+        playerVisibleLines.put(player.getUniqueId(), spawnedLines);
+        lastSentLines.put(player.getUniqueId(), newLinesAsText);
     }
 
     public void despawn(Player player) {
-        List<Integer> entityIds = playerVisibleEntities.remove(player.getUniqueId());
-        if (entityIds == null || entityIds.isEmpty()) return;
-        PacketContainer destroyPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY);
-        destroyPacket.getIntLists().write(0, entityIds);
-        try {
-            protocolManager.sendServerPacket(player, destroyPacket);
-        } catch (Exception e) {
-            // Ignorado
+        List<HologramLine> linesToDespawn = playerVisibleLines.remove(player.getUniqueId());
+        if (linesToDespawn != null) {
+            linesToDespawn.forEach(line -> line.despawn(player));
         }
+        lastSentLines.remove(player.getUniqueId()); // Limpa o cache
+        stopAnimationFor(player);
     }
 
-    private void sendSpawnPacket(Player player, int entityId, Location loc) {
-        PacketContainer spawnPacket = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
-        spawnPacket.getIntegers().write(0, entityId);
-        spawnPacket.getUUIDs().write(0, UUID.randomUUID());
-        spawnPacket.getEntityTypeModifier().write(0, EntityType.TEXT_DISPLAY);
-        spawnPacket.getDoubles()
-                .write(0, loc.getX())
-                .write(1, loc.getY())
-                .write(2, loc.getZ());
-        try {
-            protocolManager.sendServerPacket(player, spawnPacket);
-        } catch (Exception e) {
-            // Ignorado
-        }
+    private void startAnimationFor(Player player, ItemLine itemLine) {
+        stopAnimationFor(player);
+        BukkitTask task = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    this.cancel();
+                    return;
+                }
+                itemLine.runAnimationTick(player);
+            }
+        }.runTaskTimerAsynchronously(this.plugin, 0L, 1L);
+        animationTasks.put(player.getUniqueId(), task);
     }
 
-    private void sendMetadataPacket(Player player, int entityId, String text) {
-        PacketContainer metadataPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        metadataPacket.getIntegers().write(0, entityId);
-
-        WrappedDataWatcher watcher = new WrappedDataWatcher();
-        String processedText = PlaceholderRegistry.replacePlaceholders(text);
-        String jsonText = GsonComponentSerializer.gson().serialize(net.kyori.adventure.text.Component.text(processedText));
-
-        watcher.setObject(
-                new WrappedDataWatcher.WrappedDataWatcherObject(23, WrappedDataWatcher.Registry.getChatComponentSerializer(false)),
-                WrappedChatComponent.fromJson(jsonText)
-        );
-
-        // Esta é a forma final e correta que não gera avisos de "deprecated"
-        watcher.setByte(15, (byte) 3, true);
-
-        List<WrappedDataValue> dataValues = watcher.toDataValueCollection();
-        metadataPacket.getDataValueCollectionModifier().write(0, dataValues);
-        try {
-            protocolManager.sendServerPacket(player, metadataPacket);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private void stopAnimationFor(Player player) {
+        BukkitTask task = animationTasks.remove(player.getUniqueId());
+        if (task != null) {
+            task.cancel();
         }
-    }
-
-    public void setBaseLocation(Location location) {
-        this.baseLocation = location;
     }
 
     public String getId() { return id; }
     public Location getBaseLocation() { return baseLocation; }
-    public List<String> getDefaultLines() { return defaultLines; }
+    public List<HologramLine> getDefaultLines() { return defaultLines; }
+    public void setBaseLocation(Location location) { this.baseLocation = location; }
 }

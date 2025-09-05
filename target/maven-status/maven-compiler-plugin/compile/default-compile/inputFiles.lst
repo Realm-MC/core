@@ -25,6 +25,12 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/SurvivalPreferencesGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/Hologram.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/HologramManager.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/animation/Animation.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/animation/OrbitAnimation.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/line/HologramLine.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/line/ItemLine.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/line/TextLine.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/packets/HologramPacketController.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/placeholder/PlaceholderRegistry.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/ActionBarListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/DefaultChatListener.java
