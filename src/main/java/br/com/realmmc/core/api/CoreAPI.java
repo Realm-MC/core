@@ -2,7 +2,6 @@ package br.com.realmmc.core.api;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.gui.GuiManager;
-import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.npc.NPCManager;
@@ -38,7 +37,6 @@ public class CoreAPI {
     private final TagManager tagManager;
     private final PunishmentReader punishmentReader;
     private final ServerConfigManager serverConfigManager;
-    private final HologramManager hologramManager;
     private final PlayerResolver playerResolver;
     private final MaintenanceLockdownManager maintenanceLockdownManager;
     private final NPCManager npcManager;
@@ -66,7 +64,6 @@ public class CoreAPI {
         this.tagManager = main.getTagManager();
         this.punishmentReader = main.getPunishmentReader();
         this.serverConfigManager = main.getServerConfigManager();
-        this.hologramManager = main.getHologramManager();
         this.playerResolver = main.getPlayerResolver();
         this.maintenanceLockdownManager = main.getMaintenanceLockdownManager();
         this.npcManager = main.getNpcManager();
@@ -97,7 +94,6 @@ public class CoreAPI {
     public TagManager getTagManager() { return tagManager; }
     public PunishmentReader getPunishmentReader() { return punishmentReader; }
     public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
-    public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
     public NPCManager getNpcManager() { return npcManager; }

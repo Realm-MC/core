@@ -3,17 +3,13 @@ package br.com.realmmc.core.npc;
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import net.citizensnpcs.api.event.NPCRightClickEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 public class NPCListener implements Listener {
 
-    private final Main plugin;
-
     public NPCListener(Main plugin) {
-        this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
@@ -34,15 +30,8 @@ public class NPCListener implements Listener {
             NPCManager npcManager = CoreAPI.getInstance().getNpcManager();
 
             npcManager.getNpc(npcId).ifPresent(definition -> {
-                // ✅ LÓGICA DE ATUALIZAÇÃO DO HOLOGRAMA ADICIONADA AQUI
-                npcManager.incrementClickCount(npcId, player).thenRun(() -> {
-                    // Após o clique ser salvo no banco, rodamos na thread principal
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        // Forçamos o HologramManager a reavaliar a visibilidade
-                        // e o conteúdo do holograma para este jogador.
-                        CoreAPI.getInstance().getHologramManager().checkVisibilityForPlayer(player);
-                    });
-                });
+                npcManager.incrementClickCount(npcId, player);
+                npcManager.hideAlertIfClicked(player, definition);
 
                 npcManager.getActionRegistry()
                         .getAction(definition.getActionType())

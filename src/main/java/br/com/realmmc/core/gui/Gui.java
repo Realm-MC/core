@@ -15,16 +15,16 @@ public abstract class Gui {
     protected final Player player;
     protected Inventory inventory;
     protected final Map<Integer, GuiItem> items = new HashMap<>();
-    protected final Main plugin; // CAMPO ADICIONADO
+    protected final Main plugin;
 
-    // CONSTRUTOR ATUALIZADO para obter a instância do plugin
+    protected boolean cancelClicks = true;
+
     public Gui(Player player) {
         this.player = player;
         this.plugin = CoreAPI.getInstance().getPlugin();
     }
 
     public void open() {
-        // A linha abaixo usa o getTitle() que será implementado pelas subclasses
         this.inventory = Bukkit.createInventory(null, getSize(), getTitle());
         this.setupItems();
         this.player.openInventory(this.inventory);
@@ -46,6 +46,13 @@ public abstract class Gui {
         setItem(slot, new GuiItem(itemStack));
     }
 
+    protected void setCancelClicks(boolean cancelClicks) {
+        this.cancelClicks = cancelClicks;
+    }
+
+    public boolean areClicksCancelled() {
+        return this.cancelClicks;
+    }
 
 
     public void fillBorders(ItemStack item) {

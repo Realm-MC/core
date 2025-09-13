@@ -28,19 +28,15 @@ public class GuiManager implements Listener {
         Gui gui = openGuis.get(player.getUniqueId());
         if (gui == null) return;
 
-        // Cancela o evento para impedir que o jogador pegue ou mova itens.
-        event.setCancelled(true);
+        if (gui.areClicksCancelled()) {
+            event.setCancelled(true);
+        }
 
-        // --- LÓGICA DE VERIFICAÇÃO ADICIONADA AQUI ---
-        // Pega o inventário que foi clicado.
         Inventory clickedInventory = event.getClickedInventory();
-
-        // Se o clique não foi no inventário da GUI (parte de cima), ignora a ação.
         if (clickedInventory == null || !clickedInventory.equals(gui.getInventory())) {
             return;
         }
 
-        // Se o clique foi na GUI, processa a ação do item.
         GuiItem clickedItem = gui.getItems().get(event.getSlot());
         if (clickedItem != null && clickedItem.getAction() != null) {
             clickedItem.getAction().accept(event);

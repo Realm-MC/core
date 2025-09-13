@@ -24,7 +24,7 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
 
     private final NPCManager npcManager;
     private final TranslationsManager translations;
-    private static final String PERMISSION = "core.admin.npc";
+    private static final String PERMISSION = "core.manager";
 
     public NpcCommand() {
         this.npcManager = CoreAPI.getInstance().getNpcManager();

@@ -4,6 +4,7 @@ main: br.com.realmmc.core.Main
 authors: [xxxlc]
 website: www.realmmc.com.br
 api-version: '1.21'
+softdepend: [DecentHolograms]
 depend: [Citizens, LuckPerms, ViaVersion, ProtocolLib, SkinsRestorer]
 
 commands:

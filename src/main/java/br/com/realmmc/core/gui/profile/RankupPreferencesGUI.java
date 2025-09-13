@@ -48,13 +48,13 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
     private void buildDynamicItems() {
         Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player);
         if (realmPlayerOpt.isEmpty()) {
-            player.closeInventory();
             player.sendMessage("§cOcorreu um erro ao carregar suas preferências.");
             return;
         }
 
         RealmPlayer realmPlayer = realmPlayerOpt.get();
-        boolean hasPermission = player.hasPermission("rankup.champion");
+        boolean hasPermission = player.hasPermission("core.champion");
+        boolean hasRankupPermission = player.hasPermission("rankup.champion");
 
         setItem(19, createCoinsReceiptItem(realmPlayer.canReceiveCoins(), hasPermission));
         setItem(28, createToggleItem(realmPlayer.canReceiveCoins(), "CoinsReceipt", hasPermission));
@@ -65,8 +65,18 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         setItem(21, createRankupAlertItem(realmPlayer.prefersChatRankupAlerts()));
         setItem(30, createRankupAlertToggleItem(realmPlayer.prefersChatRankupAlerts()));
 
-        setItem(22, createPersonalLightItem(realmPlayer.hasPersonalLight(), hasPermission));
-        setItem(31, createToggleItem(realmPlayer.hasPersonalLight(), "RankupPersonalLight", hasPermission));
+        setItem(22, createPersonalLightItem(realmPlayer.hasPersonalLight(), hasRankupPermission));
+        setItem(31, createToggleItem(realmPlayer.hasPersonalLight(), "RankupPersonalLight", hasRankupPermission));
+    }
+
+    private void sendTogglePreferenceMessage(String preferenceName) {
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("UpdatePreference");
+        out.writeUTF(player.getUniqueId().toString());
+        out.writeUTF(preferenceName);
+        player.sendPluginMessage(plugin, "proxy:preference_update", out.toByteArray());
     }
 
     private GuiItem createCoinsReceiptItem(boolean isEnabled, boolean hasPermission) {
@@ -147,18 +157,6 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
 
         ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> sendTogglePreferenceMessage("RankupAlert"));
-    }
-
-    private void sendTogglePreferenceMessage(String preferenceName) {
-        // Toca o som para feedback instantâneo
-        CoreAPI.getInstance().getSoundManager().playSuccess(player);
-
-        // Apenas envia a requisição. A atualização visual será feita pelo listener.
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("UpdatePreference");
-        out.writeUTF(player.getUniqueId().toString());
-        out.writeUTF(preferenceName);
-        player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
     }
 
     private GuiItem createBackItem() {

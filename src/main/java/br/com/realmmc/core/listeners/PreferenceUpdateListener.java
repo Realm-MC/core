@@ -2,7 +2,9 @@ package br.com.realmmc.core.listeners;
 
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.gui.Gui;
-import br.com.realmmc.core.gui.profile.*;
+import br.com.realmmc.core.gui.profile.ChatPreferencesGUI;
+import br.com.realmmc.core.gui.profile.LobbyPreferencesGUI;
+import br.com.realmmc.core.gui.profile.RankupPreferencesGUI;
 import br.com.realmmc.core.player.RealmPlayer;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
@@ -28,32 +30,27 @@ public class PreferenceUpdateListener implements PluginMessageListener {
         if (subChannel.equals("PreferenceUpdate")) {
             UUID playerUuid = UUID.fromString(in.readUTF());
             String preferenceKey = in.readUTF();
-            boolean newState = in.readBoolean();
 
             Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(playerUuid);
 
             realmPlayerOpt.ifPresent(realmPlayer -> {
-                updateLocalCache(realmPlayer, preferenceKey, newState);
-
                 Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+
+                if (preferenceKey.equalsIgnoreCase("LobbyTime")) {
+                    String newValue = in.readUTF();
+                    realmPlayer.setLobbyTimePreference(newValue);
+                } else {
+                    boolean newValue = in.readBoolean();
+                    updateBooleanPreference(realmPlayer, preferenceKey, newValue);
+                    if (onlinePlayer != null && onlinePlayer.isOnline()) {
+                        sendFeedbackMessage(onlinePlayer, preferenceKey, newValue);
+                    }
+                }
+
                 if (onlinePlayer != null && onlinePlayer.isOnline()) {
-                    sendFeedbackMessage(onlinePlayer, preferenceKey, newState);
                     refreshOpenGui(onlinePlayer);
                 }
             });
-        }
-    }
-
-    private void updateLocalCache(RealmPlayer realmPlayer, String key, boolean newState) {
-        // MÉTODOS CORRIGIDOS AQUI
-        switch (key.toLowerCase()) {
-            case "lobbyprotection": realmPlayer.setLobbyProtectionEnabled(newState); break;
-            case "playertell": realmPlayer.setPrivateMessagesEnabled(newState); break;
-            case "coinsreceipt": realmPlayer.setCoinsReceiptEnabled(newState); break;
-            case "rankupconfirmation": realmPlayer.setNeedsRankupConfirmation(newState); break;
-            case "rankupalert": realmPlayer.setPrefersChatRankupAlerts(newState); break;
-            case "rankuppersonallight": realmPlayer.setHasPersonalLight(newState); break;
-            case "lobbyfly": realmPlayer.setLobbyFlyEnabled(newState); break; // Corrigido de setLobbyFly para setLobbyFlyEnabled
         }
     }
 
@@ -66,10 +63,21 @@ public class PreferenceUpdateListener implements PluginMessageListener {
             case "rankupconfirmation": messageKey = newState ? "toggle.rankup-confirm.enabled" : "toggle.rankup-confirm.disabled"; break;
             case "rankupalert": messageKey = newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled"; break;
             case "rankuppersonallight": messageKey = newState ? "toggle.personal-light.enabled" : "toggle.personal-light.disabled"; break;
-            case "lobbyfly": messageKey = newState ? "toggle.fly-lobby.enabled" : "toggle.fly-lobby.disabled"; break;
         }
         if (!messageKey.isEmpty()) {
             CoreAPI.getInstance().getTranslationsManager().sendMessage(player, messageKey);
+        }
+    }
+
+    private void updateBooleanPreference(RealmPlayer realmPlayer, String key, boolean newState) {
+        switch (key.toLowerCase()) {
+            case "lobbyprotection": realmPlayer.setLobbyProtectionEnabled(newState); break;
+            case "playertell": realmPlayer.setPrivateMessagesEnabled(newState); break;
+            case "coinsreceipt": realmPlayer.setCoinsReceiptEnabled(newState); break;
+            case "rankupconfirmation": realmPlayer.setNeedsRankupConfirmation(newState); break;
+            case "rankupalert": realmPlayer.setPrefersChatRankupAlerts(newState); break;
+            case "rankuppersonallight": realmPlayer.setHasPersonalLight(newState); break;
+            case "lobbyfly": realmPlayer.setLobbyFlyEnabled(newState); break;
         }
     }
 
@@ -79,7 +87,6 @@ public class PreferenceUpdateListener implements PluginMessageListener {
         if (openGui instanceof LobbyPreferencesGUI ||
                 openGui instanceof ChatPreferencesGUI ||
                 openGui instanceof RankupPreferencesGUI) {
-
             Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), openGui::open);
         }
     }

@@ -14,7 +14,6 @@ public class RealmPlayer {
     private final String prefix;
     private final int groupWeight;
 
-    // CAMPOS DE PREFERÊNCIA AGORA SÃO MUTÁVEIS (NÃO-FINAIS)
     private boolean lobbyProtectionEnabled;
     private boolean privateMessagesEnabled;
     private boolean coinsReceiptEnabled;
@@ -24,12 +23,13 @@ public class RealmPlayer {
     private boolean lobbyFlyEnabled;
     private long cash;
     private double balance;
+    private String lobbyTimePreference;
 
     public RealmPlayer(long id, UUID uuid, String username, Date firstLogin, Date lastLogin,
                        boolean lobbyProtectionEnabled, boolean privateMessagesEnabled, boolean coinsReceiptEnabled,
                        String primaryGroup, String prefix, int groupWeight,
                        boolean needsRankupConfirmation, boolean prefersChatRankupAlerts,
-                       boolean hasPersonalLight, boolean lobbyFlyEnabled, long cash) {
+                       boolean hasPersonalLight, boolean lobbyFlyEnabled, long cash, String lobbyTimePreference) {
         this.id = id;
         this.uuid = uuid;
         this.username = username;
@@ -47,9 +47,9 @@ public class RealmPlayer {
         this.lobbyFlyEnabled = lobbyFlyEnabled;
         this.cash = cash;
         this.balance = 0.0;
+        this.lobbyTimePreference = lobbyTimePreference;
     }
 
-    // Getters
     public long getId() { return id; }
     public UUID getUuid() { return uuid; }
     public String getUsername() { return username; }
@@ -67,12 +67,10 @@ public class RealmPlayer {
     public boolean hasLobbyFly() { return lobbyFlyEnabled; }
     public long getCash() { return cash; }
     public double getBalance() { return balance; }
+    public String getLobbyTimePreference() { return lobbyTimePreference; }
 
-    // Setters
     public void setBalance(double balance) { this.balance = balance; }
     public void setCash(long cash) { this.cash = cash; }
-
-    // NOVOS SETTERS ADICIONADOS
     public void setLobbyProtectionEnabled(boolean lobbyProtectionEnabled) { this.lobbyProtectionEnabled = lobbyProtectionEnabled; }
     public void setPrivateMessagesEnabled(boolean privateMessagesEnabled) { this.privateMessagesEnabled = privateMessagesEnabled; }
     public void setCoinsReceiptEnabled(boolean coinsReceiptEnabled) { this.coinsReceiptEnabled = coinsReceiptEnabled; }
@@ -80,4 +78,5 @@ public class RealmPlayer {
     public void setPrefersChatRankupAlerts(boolean prefersChatRankupAlerts) { this.prefersChatRankupAlerts = prefersChatRankupAlerts; }
     public void setHasPersonalLight(boolean hasPersonalLight) { this.hasPersonalLight = hasPersonalLight; }
     public void setLobbyFlyEnabled(boolean lobbyFlyEnabled) { this.lobbyFlyEnabled = lobbyFlyEnabled; }
+    public void setLobbyTimePreference(String lobbyTimePreference) { this.lobbyTimePreference = lobbyTimePreference; }
 }

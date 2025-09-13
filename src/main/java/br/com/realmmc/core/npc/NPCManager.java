@@ -1,10 +1,6 @@
 package br.com.realmmc.core.npc;
 
 import br.com.realmmc.core.Main;
-import br.com.realmmc.core.api.CoreAPI;
-import br.com.realmmc.core.hologram.Hologram;
-import br.com.realmmc.core.npc.NPC;
-import br.com.realmmc.core.npc.NPCSkin;
 import br.com.realmmc.core.npc.actions.ActionRegistry;
 import br.com.realmmc.core.npc.util.MineskinClient;
 import br.com.realmmc.core.utils.ColorAPI;
@@ -13,6 +9,8 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import eu.decentsoftware.holograms.api.DHAPI;
+import eu.decentsoftware.holograms.api.holograms.Hologram;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPCRegistry;
 import net.citizensnpcs.trait.LookClose;
@@ -45,12 +43,63 @@ public class NPCManager {
     private final MongoCollection<Document> clickDataCollection;
     private BukkitTask syncTask;
 
+    private final Map<UUID, Set<String>> playerClicksCache = new ConcurrentHashMap<>();
+
     public NPCManager(Main plugin) {
         this.plugin = plugin;
         this.npcRegistry = CitizensAPI.getNPCRegistry();
         this.actionRegistry = new ActionRegistry();
         this.collection = plugin.getDatabaseManager().getDatabase().getCollection("npcs");
         this.clickDataCollection = plugin.getDatabaseManager().getDatabase().getCollection("npc_click_data");
+    }
+
+    private void spawnFromDefinition(NPC definition) {
+        net.citizensnpcs.api.npc.NPC npc = npcRegistry.createNPC(EntityType.PLAYER, ColorAPI.format(definition.getDisplayName()));
+        configureNpc(npc, definition);
+        npc.spawn(definition.getLocation());
+
+        String hologramIdDefault = "npc_" + definition.getId().toLowerCase() + "_default";
+        String hologramIdAlert = "npc_" + definition.getId().toLowerCase() + "_alert";
+        Location hologramLocation = npc.getStoredLocation().clone().add(0, 2.3, 0);
+
+        if (DHAPI.getHologram(hologramIdDefault) != null) DHAPI.removeHologram(hologramIdDefault);
+        if (DHAPI.getHologram(hologramIdAlert) != null) DHAPI.removeHologram(hologramIdAlert);
+
+        Hologram holoDefault = DHAPI.createHologram(hologramIdDefault, hologramLocation, List.of(definition.getDisplayName()));
+        if (holoDefault != null) {
+            holoDefault.setDefaultVisibleState(true);
+        }
+
+        definition.getClickAlert().ifPresent(alert -> {
+            Location alertLocation = hologramLocation.clone().add(0, 0.3, 0);
+            Hologram holoAlert = DHAPI.createHologram(hologramIdAlert, alertLocation, List.of(alert.text()));
+            if (holoAlert != null) {
+                holoAlert.setDefaultVisibleState(true);
+            }
+        });
+    }
+
+    public void hideAlertIfClicked(Player player, NPC npcDefinition) {
+        if (npcDefinition.getClickAlert().isEmpty()) return;
+
+        String mode = npcDefinition.getClickAlert().get().mode();
+        boolean hasClicked = hasClicked(player.getUniqueId(), npcDefinition.getId());
+
+        if ("FIRST".equalsIgnoreCase(mode) && hasClicked) {
+            String hologramIdAlert = "npc_" + npcDefinition.getId().toLowerCase() + "_alert";
+            Hologram holoAlert = DHAPI.getHologram(hologramIdAlert);
+            if (holoAlert != null) {
+                holoAlert.hide(player);
+            }
+        }
+    }
+
+    public void shutdown() {
+        if (syncTask != null) syncTask.cancel();
+    }
+
+    public void handlePlayerQuit(Player player) {
+        playerClicksCache.remove(player.getUniqueId());
     }
 
     public void loadAndSpawnAll() {
@@ -65,35 +114,23 @@ public class NPCManager {
                 .map(def -> def.getId().toLowerCase())
                 .collect(Collectors.toSet());
 
-        // LÓGICA ANTI-DUPLICAÇÃO: Limpa NPCs gerenciados de sessões anteriores.
         List<net.citizensnpcs.api.npc.NPC> toDestroy = new ArrayList<>();
-        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
+        for (net.citizensnpcs.api.npc.NPC npc : this.npcRegistry) {
             if (npc.data().has("npc-id")) {
                 toDestroy.add(npc);
             }
         }
         if (!toDestroy.isEmpty()) {
-            plugin.getLogger().info("Limpando " + toDestroy.size() + " NPC(s) da sessão anterior para evitar duplicatas...");
-            toDestroy.forEach(net.citizensnpcs.api.npc.NPC::destroy);
+            toDestroy.forEach(npc -> npc.destroy());
         }
 
-        plugin.getLogger().info("Criando " + managedIdsOnThisServer.size() + " NPC(s) a partir do banco de dados...");
         for (String id : managedIdsOnThisServer) {
             NPC definition = npcCache.get(id);
             if (definition != null && definition.getLocation() != null && definition.getLocation().getWorld() != null) {
                 spawnFromDefinition(definition);
-            } else {
-                plugin.getLogger().warning("NPC '" + id + "' não pode ser criado (localização inválida).");
             }
         }
-
         startSyncTask();
-    }
-
-    private void spawnFromDefinition(NPC definition) {
-        net.citizensnpcs.api.npc.NPC npc = npcRegistry.createNPC(EntityType.PLAYER, ColorAPI.format(definition.getDisplayName()));
-        configureNpc(npc, definition);
-        npc.spawn(definition.getLocation());
     }
 
     private void configureNpc(net.citizensnpcs.api.npc.NPC npc, NPC definition) {
@@ -103,9 +140,7 @@ public class NPCManager {
         npc.data().set(net.citizensnpcs.api.npc.NPC.Metadata.SHOULD_SAVE, false);
         npc.setName(ColorAPI.format(definition.getDisplayName()));
 
-        if (!npc.hasTrait(LookClose.class)) {
-            npc.addTrait(LookClose.class);
-        }
+        if (!npc.hasTrait(LookClose.class)) npc.addTrait(LookClose.class);
         LookClose lookCloseTrait = npc.getTrait(LookClose.class);
         lookCloseTrait.lookClose(definition.isLookAtPlayer());
         lookCloseTrait.setRange(8);
@@ -113,67 +148,58 @@ public class NPCManager {
         if (npc.getStoredLocation() == null || !npc.getStoredLocation().equals(definition.getLocation())) {
             npc.teleport(definition.getLocation(), org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
         }
-
         applySkin(npc, definition);
     }
 
     private void startSyncTask() {
         if (syncTask != null) syncTask.cancel();
-        syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        syncTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
                 if (npc.isSpawned() && npc.data().has("npc-id")) {
                     String id = npc.data().get("npc-id");
-                    CoreAPI.getInstance().getHologramManager().getHologram("npc_" + id.toLowerCase()).ifPresent(hologram -> {
-                        Location newHoloLocation = npc.getStoredLocation().clone().add(0, 2.1, 0);
-                        hologram.setBaseLocation(newHoloLocation);
-                    });
+                    Location newHoloLocation = npc.getStoredLocation().clone().add(0, 2.3, 0);
+
+                    Hologram holoDefault = DHAPI.getHologram("npc_" + id.toLowerCase() + "_default");
+                    if (holoDefault != null) DHAPI.moveHologram(holoDefault, newHoloLocation);
+
+                    Hologram holoAlert = DHAPI.getHologram("npc_" + id.toLowerCase() + "_alert");
+                    if (holoAlert != null) DHAPI.moveHologram(holoAlert, newHoloLocation.clone().add(0, 0.3, 0));
                 }
             }
-        }, 40L, 10L);
+        }, 40L, 5L);
     }
 
-    public CompletableFuture<Void> createNpc(String id, String displayName, Location location) {
-        NPC npcDefinition = new NPC(id, displayName, location, null, null, null, "NONE", Collections.emptyList(), plugin.getServerName(), null, true);
-        return saveNpc(npcDefinition).thenRun(() -> {
-            npcCache.put(id.toLowerCase(), npcDefinition);
-            spawnFromDefinition(npcDefinition);
+    public boolean hasClicked(UUID playerId, String npcId) {
+        return playerClicksCache.getOrDefault(playerId, Collections.emptySet()).contains(npcId.toLowerCase());
+    }
+
+    public void loadPlayerClicks(Player player) {
+        try {
+            Set<String> cacheSet = playerClicksCache.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet());
+            clickDataCollection.find(Filters.eq("playerId", player.getUniqueId().toString())).forEach(doc -> {
+                cacheSet.add(doc.getString("npcId").toLowerCase());
+            });
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Falha ao carregar dados de clique para " + player.getName(), e);
+            playerClicksCache.putIfAbsent(player.getUniqueId(), ConcurrentHashMap.newKeySet());
+        }
+    }
+
+    public void incrementClickCount(String npcId, Player player) {
+        playerClicksCache.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet()).add(npcId.toLowerCase());
+        CompletableFuture.runAsync(() -> {
+            Bson filter = Filters.and(Filters.eq("npcId", npcId), Filters.eq("playerId", player.getUniqueId().toString()));
+            Bson update = Updates.combine(Updates.inc("clicks", 1), Updates.setOnInsert("playerName", player.getName()));
+            clickDataCollection.updateOne(filter, update, new UpdateOptions().upsert(true));
         });
     }
 
-    public CompletableFuture<Void> deleteNpc(String id) {
-        return CompletableFuture.runAsync(() -> {
-            net.citizensnpcs.api.npc.NPC npcToDestroy = findNpc(id);
-            CoreAPI.getInstance().getHologramManager().deleteHologram("npc_" + id.toLowerCase());
-            collection.deleteOne(Filters.eq("_id", id));
-            npcCache.remove(id.toLowerCase());
-            if (npcToDestroy != null) {
-                Bukkit.getScheduler().runTask(plugin, () -> npcToDestroy.destroy());
-            }
-        });
-    }
+    // ===================================================================================== //
+    //                                MÉTODOS RESTAURADOS AQUI                               //
+    // ===================================================================================== //
 
     public CompletableFuture<Void> saveNpc(NPC npc) {
-        return CompletableFuture.runAsync(() -> {
-            collection.replaceOne(Filters.eq("_id", npc.getId()), npc.toDocument(), new ReplaceOptions().upsert(true));
-        });
-    }
-
-    public net.citizensnpcs.api.npc.NPC findNpc(String id) {
-        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
-            if (id.equalsIgnoreCase(npc.data().get("npc-id"))) {
-                return npc;
-            }
-        }
-        return null;
-    }
-
-    public void reconfigureNpc(String id) {
-        getNpc(id).ifPresent(definition -> {
-            net.citizensnpcs.api.npc.NPC citizensNpc = findNpc(id);
-            if (citizensNpc != null) {
-                configureNpc(citizensNpc, definition);
-            }
-        });
+        return CompletableFuture.runAsync(() -> collection.replaceOne(Filters.eq("_id", npc.getId()), npc.toDocument(), new ReplaceOptions().upsert(true)));
     }
 
     public void applySkin(net.citizensnpcs.api.npc.NPC npc, NPC definition) {
@@ -184,14 +210,11 @@ public class NPCManager {
             return;
         }
         if (definition.getSkinUrl() != null && !definition.getSkinUrl().isEmpty()) {
-            MineskinClient mineskin = new MineskinClient();
-            mineskin.getSkinFromUrl(definition.getSkinUrl()).thenAccept(skinData -> {
+            new MineskinClient().getSkinFromUrl(definition.getSkinUrl()).thenAccept(skinData -> {
                 if (skinData != null) {
                     definition.setSkin(skinData.value(), skinData.signature());
-                    saveNpc(definition);
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        skinTrait.setSkinPersistent(definition.getId(), skinData.signature(), skinData.value());
-                    });
+                    saveNpc(definition); // Esta chamada precisa do método saveNpc
+                    Bukkit.getScheduler().runTask(plugin, () -> skinTrait.setSkinPersistent(definition.getId(), skinData.signature(), skinData.value()));
                 }
             });
         }
@@ -226,6 +249,27 @@ public class NPCManager {
         });
     }
 
+    public CompletableFuture<Void> createNpc(String id, String displayName, Location location) {
+        NPC npcDefinition = new NPC(id, displayName, location, null, null, null, "NONE", Collections.emptyList(), plugin.getServerName(), null, true);
+        return saveNpc(npcDefinition).thenRun(() -> {
+            npcCache.put(id.toLowerCase(), npcDefinition);
+            spawnFromDefinition(npcDefinition);
+        });
+    }
+
+    public CompletableFuture<Void> deleteNpc(String id) {
+        return CompletableFuture.runAsync(() -> {
+            net.citizensnpcs.api.npc.NPC npcToDestroy = findNpc(id);
+            if (DHAPI.getHologram("npc_" + id.toLowerCase() + "_default") != null) DHAPI.removeHologram("npc_" + id.toLowerCase() + "_default");
+            if (DHAPI.getHologram("npc_" + id.toLowerCase() + "_alert") != null) DHAPI.removeHologram("npc_" + id.toLowerCase() + "_alert");
+            collection.deleteOne(Filters.eq("_id", id));
+            npcCache.remove(id.toLowerCase());
+            if (npcToDestroy != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> npcToDestroy.destroy());
+            }
+        });
+    }
+
     public void updateClickAlert(String npcId, String mode, String text) {
         getNpc(npcId).ifPresent(npc -> {
             NPC.ClickAlert newAlert = new NPC.ClickAlert(mode.toUpperCase(), text);
@@ -234,27 +278,21 @@ public class NPCManager {
         });
     }
 
-    public CompletableFuture<Integer> getClickCount(String npcId, UUID playerId) {
-        return CompletableFuture.supplyAsync(() -> {
-            Document doc = clickDataCollection.find(Filters.and(
-                    Filters.eq("npcId", npcId),
-                    Filters.eq("playerId", playerId.toString())
-            )).first();
-            return doc == null ? 0 : doc.getInteger("clicks", 0);
-        });
+    public net.citizensnpcs.api.npc.NPC findNpc(String id) {
+        for (net.citizensnpcs.api.npc.NPC npc : npcRegistry) {
+            if (id.equalsIgnoreCase(npc.data().get("npc-id"))) {
+                return npc;
+            }
+        }
+        return null;
     }
 
-    public CompletableFuture<Void> incrementClickCount(String npcId, Player player) {
-        return CompletableFuture.runAsync(() -> {
-            Bson filter = Filters.and(
-                    Filters.eq("npcId", npcId),
-                    Filters.eq("playerId", player.getUniqueId().toString())
-            );
-            Bson update = Updates.combine(
-                    Updates.inc("clicks", 1),
-                    Updates.setOnInsert("playerName", player.getName())
-            );
-            clickDataCollection.updateOne(filter, update, new UpdateOptions().upsert(true));
+    public void reconfigureNpc(String id) {
+        getNpc(id).ifPresent(definition -> {
+            net.citizensnpcs.api.npc.NPC citizensNpc = findNpc(id);
+            if (citizensNpc != null) {
+                configureNpc(citizensNpc, definition);
+            }
         });
     }
 
@@ -263,7 +301,7 @@ public class NPCManager {
     }
 
     public Collection<NPC> getAllNpcs() {
-        return npcCache.values();
+        return Collections.unmodifiableCollection(npcCache.values());
     }
 
     public ActionRegistry getActionRegistry() {

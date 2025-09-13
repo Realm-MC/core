@@ -3,12 +3,10 @@ package br.com.realmmc.core;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.commands.*;
 import br.com.realmmc.core.gui.GuiManager;
-import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.modules.SystemType;
-import br.com.realmmc.core.npc.NPCListener;
 import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
@@ -54,7 +52,6 @@ public final class Main extends JavaPlugin {
     private TagManager tagManager;
     private GuiManager guiManager;
     private ModuleManager moduleManager;
-    private HologramManager hologramManager;
     private PlayerResolver playerResolver;
     private MaintenanceLockdownManager maintenanceLockdownManager;
     private String serverName;
@@ -107,15 +104,13 @@ public final class Main extends JavaPlugin {
         this.tagManager = new TagManager(this);
         this.guiManager = new GuiManager(this);
         this.moduleManager = new ModuleManager(this);
-        this.hologramManager = new HologramManager(this);
         this.playerResolver = new PlayerResolver();
         this.maintenanceLockdownManager = new MaintenanceLockdownManager(this);
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
 
-        if (Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
+        if (Bukkit.getPluginManager().isPluginEnabled("Citizens") && Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) {
             this.npcManager = new NPCManager(this);
-            // O carregamento agora é feito pelo ServerLifecycleListener para garantir que o mundo já carregou.
         }
 
         new CoreAPI(this);
@@ -128,12 +123,12 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.npcManager != null) {
+            this.npcManager.shutdown();
+        }
         if (this.maintenanceLockdownManager != null) {
             this.maintenanceLockdownManager.stopActionBarTask(true);
             this.maintenanceLockdownManager.stopActionBarTask(false);
-        }
-        if (this.hologramManager != null) {
-            this.hologramManager.despawnAll();
         }
         if (databaseManager != null) {
             databaseManager.close();
@@ -148,7 +143,6 @@ public final class Main extends JavaPlugin {
     private void activateDefaultModules() {
         getServer().getScheduler().runTaskLater(this, () -> {
             getLogger().info("Verificando módulos padrão do Core para ativação...");
-
             if (!moduleManager.isClaimed(SystemType.SCOREBOARD)) {
                 getLogger().info("Nenhum plugin de Scoreboard customizado detectado. Ativando scoreboard padrão do Core.");
                 new DefaultScoreboardManager(this).start();
@@ -201,6 +195,8 @@ public final class Main extends JavaPlugin {
             npcCommand.setTabCompleter(npcExecutor);
         }
 
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Registra os canais de entrada E de saída
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:actionbar", new ActionBarListener(this));
@@ -217,6 +213,10 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "core:punishment_notify");
+
+        // --- LINHA ESSENCIAL ADICIONADA ---
+        // Registra o canal que usamos para ENVIAR mensagens para o Proxy
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preference_update");
     }
 
     private boolean setupLuckPerms() {
@@ -250,6 +250,7 @@ public final class Main extends JavaPlugin {
         }
     }
 
+    public void setNpcManager(NPCManager npcManager) { this.npcManager = npcManager; }
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
@@ -272,7 +273,6 @@ public final class Main extends JavaPlugin {
     public TagManager getTagManager() { return tagManager; }
     public GuiManager getGuiManager() { return guiManager; }
     public ModuleManager getModuleManager() { return moduleManager; }
-    public HologramManager getHologramManager() { return hologramManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
     public NPCManager getNpcManager() { return npcManager; }

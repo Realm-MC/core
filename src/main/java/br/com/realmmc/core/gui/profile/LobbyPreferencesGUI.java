@@ -48,7 +48,6 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
     private void buildDynamicItems() {
         Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player);
         if (realmPlayerOpt.isEmpty()) {
-            player.closeInventory();
             player.sendMessage("§cOcorreu um erro ao carregar suas preferências.");
             return;
         }
@@ -62,6 +61,65 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             setItem(20, createLobbyFlyItem(realmPlayer.hasLobbyFly(), true));
             setItem(29, createToggleItem(realmPlayer.hasLobbyFly(), "LobbyFly", true));
         }
+
+        setItem(21, createLobbyTimeItem(realmPlayer.getLobbyTimePreference()));
+        setItem(30, createLobbyTimeToggleItem());
+    }
+
+    private void sendTogglePreferenceMessage(String preferenceName) {
+        CoreAPI.getInstance().getSoundManager().playSuccess(player);
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("UpdatePreference");
+        out.writeUTF(player.getUniqueId().toString());
+        out.writeUTF(preferenceName);
+
+        player.sendPluginMessage(plugin, "proxy:preference_update", out.toByteArray());
+    }
+
+    private GuiItem createLobbyTimeToggleItem() {
+        String name = "&eAlternar Tempo";
+        List<String> lore = List.of("&7Clique para mudar para a próxima opção.");
+        ItemStack item = new ItemBuilder(Material.REDSTONE_TORCH).setName(name).setLore(lore).build();
+        return new GuiItem(item, event -> sendTogglePreferenceMessage("tempo"));
+    }
+
+    private GuiItem createLobbyTimeItem(String currentPreference) {
+        String name = "&aTempo no Lobby";
+        String status;
+        String safePreference = (currentPreference == null) ? "CICLO" : currentPreference;
+
+        switch (safePreference) {
+            case "DIA": status = "&eDia"; break;
+            case "TARDE": status = "&6Tarde"; break;
+            case "NOITE": status = "&9Noite"; break;
+            default: status = "&fCiclo Automático"; break;
+        }
+
+        List<String> lore = List.of(
+                "&7Escolha um período fixo para o",
+                "&7tempo no lobby ou deixe no ciclo",
+                "&7padrão de dia e noite.",
+                "",
+                "&fEstado Atual: " + status
+        );
+
+        ItemStack item = new ItemBuilder(Material.CLOCK).setName(name).setLore(lore).build();
+        return new GuiItem(item);
+    }
+
+    private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
+        String name = isEnabled ? "&cDesativar" : "&aAtivar";
+        List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
+        Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
+        ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
+        return new GuiItem(item, event -> {
+            if (!hasPermission) {
+                CoreAPI.getInstance().getSoundManager().playError(player);
+                return;
+            }
+            sendTogglePreferenceMessage(preferenceName);
+        });
     }
 
     private GuiItem createLobbyProtectionItem(boolean isEnabled, boolean hasPermission) {
@@ -74,13 +132,7 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-
-        ItemStack item = new ItemBuilder(Material.IRON_DOOR)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.IRON_DOOR).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -94,56 +146,14 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-
-        ItemStack item = new ItemBuilder(Material.FEATHER)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.FEATHER).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
-    }
-
-    private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
-        String name = isEnabled ? "&cDesativar" : "&aAtivar";
-        List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
-        Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
-
-        ItemStack item = new ItemBuilder(material)
-                .setName(name)
-                .setLore(lore)
-                .build();
-
-        return new GuiItem(item, event -> {
-            if (!hasPermission) {
-                CoreAPI.getInstance().getSoundManager().playError(player);
-                return;
-            }
-            sendTogglePreferenceMessage(preferenceName);
-        });
-    }
-
-    private void sendTogglePreferenceMessage(String preferenceName) {
-        // Toca o som para feedback instantâneo
-        CoreAPI.getInstance().getSoundManager().playSuccess(player);
-
-        // Apenas envia a requisição. A atualização visual será feita pelo listener.
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("UpdatePreference");
-        out.writeUTF(player.getUniqueId().toString());
-        out.writeUTF(preferenceName);
-        player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
     }
 
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.lobby-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.lobby-preferences.back-item.lore");
-
-        ItemStack item = new ItemBuilder(Material.ARROW)
-                .setName(name)
-                .setLore(lore)
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.ARROW).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();

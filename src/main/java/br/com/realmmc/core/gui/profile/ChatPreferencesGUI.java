@@ -49,7 +49,6 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
     private void buildDynamicItems() {
         Optional<RealmPlayer> realmPlayerOpt = CoreAPI.getInstance().getPlayerDataManager().getRealmPlayer(player);
         if (realmPlayerOpt.isEmpty()) {
-            player.closeInventory();
             player.sendMessage("§cOcorreu um erro ao carregar suas preferências.");
             return;
         }
@@ -71,14 +70,7 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
         }
-
-        ItemStack item = new ItemBuilder(Material.PAPER)
-                .setName(name)
-                .setLore(lore)
-                .hideFlags()
-                .build();
-
-        // A ação de clique foi removida daqui e centralizada no botão de toggle
+        ItemStack item = new ItemBuilder(Material.PAPER).setName(name).setLore(lore).hideFlags().build();
         return new GuiItem(item);
     }
 
@@ -86,12 +78,7 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.chat-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
-
-        ItemStack item = new ItemBuilder(material)
-                .setName(name)
-                .setLore(lore)
-                .build();
-
+        ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> sendTogglePreferenceMessage(preferenceName, hasPermission));
     }
 
@@ -100,28 +87,19 @@ public class ChatPreferencesGUI extends BaseProfileMenuGUI {
             CoreAPI.getInstance().getSoundManager().playError(player);
             return;
         }
-
-        // Toca o som para feedback instantâneo ao jogador
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
 
-        // Apenas envia a requisição para o proxy. A atualização visual
-        // será acionada pelo PreferenceUpdateListener quando a mudança for confirmada.
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
-        player.sendPluginMessage(plugin, "proxy:preferences", out.toByteArray());
+        player.sendPluginMessage(plugin, "proxy:preference_update", out.toByteArray());
     }
 
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.chat-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.chat-preferences.back-item.lore");
-
-        ItemStack item = new ItemBuilder(Material.ARROW)
-                .setName(name)
-                .setLore(lore)
-                .build();
-
+        ItemStack item = new ItemBuilder(Material.ARROW).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();

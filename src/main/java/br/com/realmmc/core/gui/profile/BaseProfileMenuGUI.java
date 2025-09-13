@@ -88,7 +88,6 @@ public abstract class BaseProfileMenuGUI extends Gui {
     }
 
     protected void showComingSoon() {
-        player.closeInventory();
         ActionBarManager actionBar = CoreAPI.getInstance().getActionBarManager();
         String message = "&cEste sistema será lançado em breve!";
         actionBar.setMessage(player, ActionBarManager.MessagePriority.MEDIUM, "feedback", message, 3);
