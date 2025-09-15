@@ -23,6 +23,10 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/PurchaseHistoryGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/RankupPreferencesGUI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/gui/profile/SurvivalPreferencesGUI.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/Hologram.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/HologramManager.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/HologramPacketFactory.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/hologram/api/HologramAPI.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/ActionBarListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/DefaultChatListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/EconomyUpdateListener.java
@@ -30,7 +34,6 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/OpenGuiListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/PlayerListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/PreferenceUpdateListener.java
-/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/ServerLifecycleListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/SoundListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/TagUpdateListener.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/listeners/TeleportListener.java
@@ -51,12 +54,11 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/model/Purchase.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/modules/ModuleManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/modules/SystemType.java
-/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/ClickCooldown.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPC.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCAction.java
-/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCListener.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCInteractionManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCManager.java
-/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCSkin.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/NPCPacketFactory.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/ActionRegistry.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/ActionType.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/NPCAction.java
@@ -66,6 +68,9 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/PlayerCommandAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/SendMessageAction.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/actions/impl/SendSequencedMessageAction.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/api/NPCAPI.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/skin/Skin.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/skin/SkinManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/npc/util/MineskinClient.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/player/PlayerManager.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/player/RealmPlayer.java
@@ -83,6 +88,7 @@
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/InteractiveChatFormatter.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/ItemBuilder.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/JsonMessage.java
+/Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/Permissions.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/PlaceholderRegistry.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/PlayerResolver.java
 /Users/lucas/Documents/Projects/core/src/main/java/br/com/realmmc/core/utils/SimilarityChecker.java

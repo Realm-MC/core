@@ -3,6 +3,7 @@ package br.com.realmmc.core;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.commands.*;
 import br.com.realmmc.core.gui.GuiManager;
+import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
@@ -13,12 +14,13 @@ import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
 import br.com.realmmc.core.users.*;
 import br.com.realmmc.core.utils.PlayerResolver;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import net.luckperms.api.LuckPerms;
 import net.skinsrestorer.api.SkinsRestorer;
 import net.skinsrestorer.api.SkinsRestorerProvider;
-import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -55,13 +57,25 @@ public final class Main extends JavaPlugin {
     private PlayerResolver playerResolver;
     private MaintenanceLockdownManager maintenanceLockdownManager;
     private String serverName;
-    private NPCManager npcManager;
     private PurchaseHistoryReader purchaseHistoryReader;
     private GroupInfoReader groupInfoReader;
+    private HologramManager hologramManager;
+    private NPCManager npcManager;
+
+    @Override
+    public void onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(true);
+        PacketEvents.getAPI().load();
+    }
 
     @Override
     public void onEnable() {
+        PacketEvents.getAPI().init();
         saveDefaultConfig();
+
+        new CoreAPI(this);
+
         try {
             this.serverName = new File(".").getCanonicalFile().getName();
         } catch (IOException e) {
@@ -85,7 +99,6 @@ public final class Main extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
         setupViaVersion();
         setupSkinsRestorer();
 
@@ -109,11 +122,8 @@ public final class Main extends JavaPlugin {
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
 
-        if (Bukkit.getPluginManager().isPluginEnabled("Citizens") && Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) {
-            this.npcManager = new NPCManager(this);
-        }
-
-        new CoreAPI(this);
+        this.hologramManager = new HologramManager(this);
+        this.npcManager = new NPCManager(this);
 
         registerComponents();
         activateDefaultModules();
@@ -123,9 +133,6 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (this.npcManager != null) {
-            this.npcManager.shutdown();
-        }
         if (this.maintenanceLockdownManager != null) {
             this.maintenanceLockdownManager.stopActionBarTask(true);
             this.maintenanceLockdownManager.stopActionBarTask(false);
@@ -137,7 +144,10 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().unregisterIncomingPluginChannel(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
 
-        this.translationsManager.log(Level.INFO, "logs.plugin.disabled");
+        PacketEvents.getAPI().terminate();
+        if (this.translationsManager != null) {
+            this.translationsManager.log(Level.INFO, "logs.plugin.disabled");
+        }
     }
 
     private void activateDefaultModules() {
@@ -167,7 +177,6 @@ public final class Main extends JavaPlugin {
         pm.registerEvents(vanishListener, this);
         pm.registerEvents(this.godManager, this);
         pm.registerEvents(maintenanceListener, this);
-        pm.registerEvents(new ServerLifecycleListener(this), this);
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand();
@@ -188,15 +197,11 @@ public final class Main extends JavaPlugin {
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
 
-        if (Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
-            NpcCommand npcExecutor = new NpcCommand();
-            PluginCommand npcCommand = Objects.requireNonNull(getCommand("npcs"));
-            npcCommand.setExecutor(npcExecutor);
-            npcCommand.setTabCompleter(npcExecutor);
-        }
+        NpcCommand npcExecutor = new NpcCommand();
+        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npc"));
+        npcCommand.setExecutor(npcExecutor);
+        npcCommand.setTabCompleter(npcExecutor);
 
-        // --- CORREÇÃO APLICADA AQUI ---
-        // Registra os canais de entrada E de saída
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:actionbar", new ActionBarListener(this));
@@ -213,9 +218,6 @@ public final class Main extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:sync");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preferences");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "core:punishment_notify");
-
-        // --- LINHA ESSENCIAL ADICIONADA ---
-        // Registra o canal que usamos para ENVIAR mensagens para o Proxy
         getServer().getMessenger().registerOutgoingPluginChannel(this, "proxy:preference_update");
     }
 
@@ -250,7 +252,6 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    public void setNpcManager(NPCManager npcManager) { this.npcManager = npcManager; }
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
@@ -275,7 +276,8 @@ public final class Main extends JavaPlugin {
     public ModuleManager getModuleManager() { return moduleManager; }
     public PlayerResolver getPlayerResolver() { return playerResolver; }
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
-    public NPCManager getNpcManager() { return npcManager; }
     public PurchaseHistoryReader getPurchaseHistoryReader() { return purchaseHistoryReader; }
     public GroupInfoReader getGroupInfoReader() { return groupInfoReader; }
+    public HologramManager getHologramManager() { return hologramManager; }
+    public NPCManager getNpcManager() { return npcManager; }
 }

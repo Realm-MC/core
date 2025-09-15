@@ -470,31 +470,47 @@ gui:
       name: "&7↑ Navegação"
       lore:
         - "&7↓ Preferências do Lobby"
-    lobby-protection-item:
-      name: "Proteção do /lobby"
-      lore:
-        - "&7Exige uma confirmação para usar /lobby"
-        - "&7se você já estiver em um modo de jogo."
-        - ""
-      status-line: "&fEstado: {status}"
-    fly-lobby-item:
-      name: "Voar no Lobby"
-      lore:
-        - "&7Ative ou desative a sua capacidade"
-        - "&7de voar permanentemente no lobby."
-        - ""
-      status-line: "&fEstado: {status}"
-    toggle:
-      name_enabled: "&aAtivado"
-      name_disabled: "&cDesativado"
-      lore:
-        - "&7Clique para alternar"
-        - "&7o estado da preferência."
     back-item:
       name: "&aVoltar"
       lore:
         - "&7Clique para retornar ao menu"
         - "&7anterior de preferências."
+    status-line: "&fEstado: {status}"
+    permission-required: "&cVocê precisa do grupo Campeão ou superior."
+    toggle-lore:
+      - "&7Clique para alternar."
+      - "&7o estado da preferência."
+    toggle-names:
+      enabled: "&aAtivado"
+      disabled: "&cDesativado"
+      activate: "&aAtivar"
+      deactivate: "&cDesativar"
+    protection-item:
+      name: "Proteção do /lobby"
+      lore:
+        - "&7Exige uma confirmação para usar /lobby"
+        - "&7se você já estiver em um modo de jogo."
+    fly-item:
+      name: "Voar no Lobby"
+      lore:
+        - "&7Ative ou desative a sua capacidade"
+        - "&7de voar permanentemente no lobby."
+    time-item:
+      name: "&aTempo no Lobby"
+      lore:
+        - "&7Escolha um período fixo para o"
+        - "&7tempo no lobby ou deixe no ciclo completo."
+        - ""
+      status-prefix: "&fEstado: "
+      status-cycle: "&7Ciclo Completo"
+      status-day: "&eDia"
+      status-afternoon: "&6Tarde"
+      status-night: "&9Noite"
+    time-toggle-item:
+      name-to-day: "&eDia"
+      name-to-afternoon: "&6Tarde"
+      name-to-night: "&9Noite"
+      name-to-cycle: "&7Ciclo Completo"
   chat-preferences:
     title: "Perfil / Preferências / Chat"
     separator-item:
@@ -700,45 +716,49 @@ commands:
   fly:
     permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
   npc:
-    usage: "&cUtilize: /npc <criar|deletar|list|tphere|setskin|setaction>"
-    player-only: "&cEste comando só pode ser executado por jogadores."
+    player-only: "&cEste comando só pode ser executado por um jogador."
+    usage: "&cUtilize: /npc <criar|deletar|list|tp|tphere|setskin|setaction|info|togglelook>"
     create:
-      usage: "&cUse: /npc criar <id> <nome de exibição>"
-      success: "&aNPC '{id}' criado com sucesso na sua localização!"
+      usage: "&cUse: /npc criar <id> <skin_username> <nome de exibição...>"
+      success: "&aNPC '{id}' criado com sucesso na sua localização com a skin de '{skin}'!"
       already-exists: "&cJá existe um NPC com o ID '{id}'."
     delete:
       usage: "&cUse: /npc deletar <id>"
       success: "&aNPC '{id}' deletado com sucesso!"
-      not-found: "&cNão foi encontrado um NPC com o ID '{id}'."
+    tp:
+      usage: "&cUse: /npc tp <id>"
+      success: "&aTeleportado para o NPC '{id}'."
     list:
       header: "&6Lista de NPCs existentes:"
       line-format: "&7- &e{id} &f({display_name}&f)"
       empty: "&cNão há NPCs criados neste servidor."
     tphere:
       usage: "&cUse: /npc tphere <id>"
-      success: "&aNPC '{id}' movido para sua localização."
+      success: "&aNPC '{id}' movido para sua localização atual."
     setskin:
       usage: "&cUse: /npc setskin <id> <nome_do_jogador>"
       success: "&aSkin do NPC '{id}' atualizada para a do jogador '{player}'."
-      fail: "&cNão foi possível encontrar a skin do jogador '{player}' ou o NPC não existe."
+      fail: "&cNão foi possível encontrar a skin do jogador '{player}'."
     setaction:
       usage: "&cUse: /npc setaction <id> <TIPO> [argumentos...]"
       success: "&aAção do NPC '{id}' definida para '{type}' com sucesso!"
+      cleared: "&aAção do NPC '{id}' foi removida com sucesso."
       invalid-type: "&cTipo de ação inválido. Tipos disponíveis: &f{types}"
-    setalert:
-      usage: "&cUse: /npc setalert <id> <NEVER|EVERYONE|FIRST> [texto do alerta]"
-      invalid-mode: "&cModo inválido. Use: NEVER, EVERYONE, ou FIRST."
-      text-required: "&cPara os modos EVERYONE e FIRST, você precisa especificar um texto."
-      success: "&aAlerta de clique para o NPC '{id}' definido para o modo '{mode}'."
+    togglelook:
+      usage: "&cUse: /npc togglelook <id>"
+      enabled: "&aO NPC '{id}' agora irá olhar para os jogadores."
+      disabled: "&cO NPC '{id}' não irá mais olhar para os jogadores."
     info:
-      usage: "&cUse: /npc info <id>"
       header: "&6Informações do NPC: &e{id}"
-      line-name: "&7- Nome de Exibição: &f{display_name}"
+      line-name: "&7- Nome de Exibição: &r{display_name}"
+      line-skin: "&7- Skin: &f{skin_owner}"
       line-location: "&7- Localização: &f{location}"
       line-action-type: "&7- Tipo de Ação: &f{action_type}"
-      line-action-values: "&7- Valores da Ação ({count}):"
+      line-action-values: "&7- Argumentos da Ação:"
       line-action-value-entry: "&f  - {value}"
       line-no-action: "&7- Ação: &fNenhuma"
+    error:
+      not-found: "&cNão foi encontrado um NPC com o ID '{id}'."
 
 npc-dialogue:
   janet:

@@ -7,8 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import java.util.List;
 
-import static net.citizensnpcs.util.Util.createItem;
-
 public class PreferencesGUI extends BaseProfileMenuGUI {
 
     public PreferencesGUI(Player player) {

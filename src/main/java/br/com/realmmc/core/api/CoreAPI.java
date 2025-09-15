@@ -2,6 +2,7 @@ package br.com.realmmc.core.api;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.gui.GuiManager;
+import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.npc.NPCManager;
@@ -10,65 +11,22 @@ import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.users.GroupInfoReader;
 import br.com.realmmc.core.users.PurchaseHistoryReader;
 import br.com.realmmc.core.users.UserProfileReader;
-import br.com.realmmc.core.users.UserPreferenceReader;
 import br.com.realmmc.core.users.UserPreferenceManager;
+import br.com.realmmc.core.users.UserPreferenceReader;
 import br.com.realmmc.core.utils.PlayerResolver;
 
+/**
+ * Ponto de acesso central e estático para os principais managers e serviços do plugin Core.
+ * Facilita a integração entre os diferentes módulos da rede.
+ */
 public class CoreAPI {
 
     private static CoreAPI instance;
-
     private final Main plugin;
-    private final ModuleManager moduleManager;
-    private final GuiManager guiManager;
-    private final PlayerManager playerManager;
-    private final PlayerDataManager playerDataManager;
-    private final SoundManager soundManager;
-    private final ActionBarManager actionBarManager;
-    private final TranslationsManager translationsManager;
-    private final DatabaseManager databaseManager;
-    private final UserProfileReader userProfileReader;
-    private final UserPreferenceReader userPreferenceReader;
-    private final UserPreferenceManager userPreferenceManager;
-    private final CooldownManager cooldownManager;
-    private final DelayManager delayManager;
-    private final SpamManager spamManager;
-    private final GodManager godManager;
-    private final TagManager tagManager;
-    private final PunishmentReader punishmentReader;
-    private final ServerConfigManager serverConfigManager;
-    private final PlayerResolver playerResolver;
-    private final MaintenanceLockdownManager maintenanceLockdownManager;
-    private final NPCManager npcManager;
-    private final PurchaseHistoryReader purchaseHistoryReader;
-    private final GroupInfoReader groupInfoReader;
 
     public CoreAPI(Main main) {
         instance = this;
         this.plugin = main;
-        this.moduleManager = main.getModuleManager();
-        this.guiManager = main.getGuiManager();
-        this.playerManager = main.getPlayerManager();
-        this.playerDataManager = main.getPlayerDataManager();
-        this.soundManager = main.getSoundManager();
-        this.actionBarManager = main.getActionBarManager();
-        this.translationsManager = main.getTranslationsManager();
-        this.databaseManager = main.getDatabaseManager();
-        this.userProfileReader = main.getUserProfileReader();
-        this.userPreferenceReader = main.getUserPreferenceReader();
-        this.userPreferenceManager = main.getUserPreferenceManager();
-        this.cooldownManager = main.getCooldownManager();
-        this.delayManager = main.getDelayManager();
-        this.spamManager = main.getSpamManager();
-        this.godManager = main.getGodManager();
-        this.tagManager = main.getTagManager();
-        this.punishmentReader = main.getPunishmentReader();
-        this.serverConfigManager = main.getServerConfigManager();
-        this.playerResolver = main.getPlayerResolver();
-        this.maintenanceLockdownManager = main.getMaintenanceLockdownManager();
-        this.npcManager = main.getNpcManager();
-        this.purchaseHistoryReader = main.getPurchaseHistoryReader();
-        this.groupInfoReader = main.getGroupInfoReader();
     }
 
     public static CoreAPI getInstance() {
@@ -76,27 +34,28 @@ public class CoreAPI {
     }
 
     public Main getPlugin() { return plugin; }
-    public ModuleManager getModuleManager() { return moduleManager; }
-    public GuiManager getGuiManager() { return guiManager; }
-    public PlayerManager getPlayerManager() { return playerManager; }
-    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
-    public SoundManager getSoundManager() { return soundManager; }
-    public ActionBarManager getActionBarManager() { return actionBarManager; }
-    public TranslationsManager getTranslationsManager() { return translationsManager; }
-    public DatabaseManager getDatabaseManager() { return databaseManager; }
-    public UserProfileReader getUserProfileReader() { return userProfileReader; }
-    public UserPreferenceReader getUserPreferenceReader() { return userPreferenceReader; }
-    public UserPreferenceManager getUserPreferenceManager() { return userPreferenceManager; }
-    public CooldownManager getCooldownManager() { return cooldownManager; }
-    public DelayManager getDelayManager() { return delayManager; }
-    public SpamManager getSpamManager() { return spamManager; }
-    public GodManager getGodManager() { return godManager; }
-    public TagManager getTagManager() { return tagManager; }
-    public PunishmentReader getPunishmentReader() { return punishmentReader; }
-    public ServerConfigManager getServerConfigManager() { return serverConfigManager; }
-    public PlayerResolver getPlayerResolver() { return playerResolver; }
-    public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
-    public NPCManager getNpcManager() { return npcManager; }
-    public PurchaseHistoryReader getPurchaseHistoryReader() { return purchaseHistoryReader; }
-    public GroupInfoReader getGroupInfoReader() { return groupInfoReader; }
+    public ModuleManager getModuleManager() { return plugin.getModuleManager(); }
+    public GuiManager getGuiManager() { return plugin.getGuiManager(); }
+    public PlayerManager getPlayerManager() { return plugin.getPlayerManager(); }
+    public PlayerDataManager getPlayerDataManager() { return plugin.getPlayerDataManager(); }
+    public SoundManager getSoundManager() { return plugin.getSoundManager(); }
+    public ActionBarManager getActionBarManager() { return plugin.getActionBarManager(); }
+    public TranslationsManager getTranslationsManager() { return plugin.getTranslationsManager(); }
+    public DatabaseManager getDatabaseManager() { return plugin.getDatabaseManager(); }
+    public UserProfileReader getUserProfileReader() { return plugin.getUserProfileReader(); }
+    public UserPreferenceReader getUserPreferenceReader() { return plugin.getUserPreferenceReader(); }
+    public UserPreferenceManager getUserPreferenceManager() { return plugin.getUserPreferenceManager(); }
+    public CooldownManager getCooldownManager() { return plugin.getCooldownManager(); }
+    public DelayManager getDelayManager() { return plugin.getDelayManager(); }
+    public SpamManager getSpamManager() { return plugin.getSpamManager(); }
+    public ServerConfigManager getServerConfigManager() { return plugin.getServerConfigManager(); }
+    public PunishmentReader getPunishmentReader() { return plugin.getPunishmentReader(); }
+    public GodManager getGodManager() { return plugin.getGodManager(); }
+    public TagManager getTagManager() { return plugin.getTagManager(); }
+    public PlayerResolver getPlayerResolver() { return plugin.getPlayerResolver(); }
+    public MaintenanceLockdownManager getMaintenanceLockdownManager() { return plugin.getMaintenanceLockdownManager(); }
+    public PurchaseHistoryReader getPurchaseHistoryReader() { return plugin.getPurchaseHistoryReader(); }
+    public GroupInfoReader getGroupInfoReader() { return plugin.getGroupInfoReader(); }
+    public HologramManager getHologramManager() { return plugin.getHologramManager(); }
+    public NPCManager getNpcManager() { return plugin.getNpcManager(); }
 }
