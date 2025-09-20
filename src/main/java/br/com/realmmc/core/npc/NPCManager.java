@@ -212,7 +212,7 @@ public class NPCManager implements Listener {
 
             Hologram hologram = HologramAPI.get(holoId).orElseGet(() -> {
                 Location holoLoc = npc.getLocation().clone().add(0, 2.3, 0);
-                return HologramAPI.create(holoId, holoLoc, List.of(alert.text()));
+                return HologramAPI.create(holoId, holoLoc, List.of(alert.text()), false);
             });
 
             if (shouldShow) {

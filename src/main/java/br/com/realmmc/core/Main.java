@@ -121,9 +121,9 @@ public final class Main extends JavaPlugin {
         this.maintenanceLockdownManager = new MaintenanceLockdownManager(this);
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
-
         this.hologramManager = new HologramManager(this);
         this.npcManager = new NPCManager(this);
+        this.hologramManager.loadHolograms();
 
         registerComponents();
         activateDefaultModules();
