@@ -55,6 +55,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         RealmPlayer realmPlayer = realmPlayerOpt.get();
         boolean hasPermission = player.hasPermission("core.champion");
         boolean hasRankupPermission = player.hasPermission("rankup.champion");
+        boolean canChangeRankPrefix = player.hasPermission("proxy.supremo");
 
         setItem(19, createCoinsReceiptItem(realmPlayer.canReceiveCoins(), hasPermission));
         setItem(28, createToggleItem(realmPlayer.canReceiveCoins(), "CoinsReceipt", hasPermission));
@@ -65,13 +66,19 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         setItem(21, createRankupAlertItem(realmPlayer.prefersChatRankupAlerts()));
         setItem(30, createRankupAlertToggleItem(realmPlayer.prefersChatRankupAlerts()));
 
-        setItem(22, createPersonalLightItem(realmPlayer.hasPersonalLight(), hasRankupPermission));
-        setItem(31, createToggleItem(realmPlayer.hasPersonalLight(), "RankupPersonalLight", hasRankupPermission));
+        setItem(22, createPersonalLightItem(realmPlayer.hasPersonalLight(), hasPermission)); // Note: A permissão para luz pode ser 'rankup.champion'
+        setItem(31, createToggleItem(realmPlayer.hasPersonalLight(), "RankupPersonalLight", hasPermission));
+
+        setItem(23, createRankPrefixItem(realmPlayer.isShowRankPrefixEnabled(), canChangeRankPrefix));
+        setItem(32, createToggleItem(realmPlayer.isShowRankPrefixEnabled(), "ShowRankPrefix", canChangeRankPrefix));
     }
 
-    private void sendTogglePreferenceMessage(String preferenceName) {
+    private void sendTogglePreferenceMessage(String preferenceName, boolean hasPermission) {
+        if (!hasPermission) {
+            CoreAPI.getInstance().getSoundManager().playError(player);
+            return;
+        }
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
-
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("UpdatePreference");
         out.writeUTF(player.getUniqueId().toString());
@@ -79,12 +86,19 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         player.sendPluginMessage(plugin, "proxy:preference_update", out.toByteArray());
     }
 
+    private void sendTogglePreferenceMessage(String preferenceName) {
+        sendTogglePreferenceMessage(preferenceName, true);
+    }
+
     private GuiItem createCoinsReceiptItem(boolean isEnabled, boolean hasPermission) {
         String nameColor = isEnabled ? "&a" : "&c";
         String name = nameColor + translations.getRawMessage("gui.rankup-preferences.coins-receipt-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.coins-receipt-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
+
+        // A linha lore.add("") foi removida daqui
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+
         if (!hasPermission) {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
@@ -99,7 +113,9 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         String name = nameColor + translations.getRawMessage("gui.rankup-preferences.rankup-confirm-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.rankup-confirm-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
+
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+
         if (!hasPermission) {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
@@ -113,6 +129,7 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         String name = translations.getRawMessage("gui.rankup-preferences.rankup-alert-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.rankup-alert-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.rankup-alert-item.status_" + (isChatMode ? "chat" : "actionbar"));
+
         lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
 
         ItemStack item = new ItemBuilder(Material.BELL).setName(name).setLore(lore).hideFlags().build();
@@ -124,7 +141,9 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         String name = nameColor + translations.getRawMessage("gui.rankup-preferences.personal-light-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.personal-light-item.lore");
         String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
-        lore.add(translations.getMessage("gui.rankup-preferences.personal-light-item.status-line", "status", status));
+
+        lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+
         if (!hasPermission) {
             lore.add("");
             lore.add(translations.getMessage("gui.preferences.toggle.permission-required"));
@@ -134,27 +153,34 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
         return new GuiItem(item);
     }
 
+    private GuiItem createRankPrefixItem(boolean isEnabled, boolean hasPermission) {
+        String nameColor = isEnabled ? "&a" : "&c";
+        String name = nameColor + translations.getRawMessage("gui.rankup-preferences.rank-prefix-item.name");
+        List<String> lore = getLoreFromConfig("gui.rankup-preferences.rank-prefix-item.lore");
+        String status = translations.getMessage("gui.rankup-preferences.toggle.name_" + (isEnabled ? "enabled" : "disabled"));
+
+        lore.add(translations.getMessage("gui.rankup-preferences.status-line", "status", status));
+
+        if (!hasPermission) {
+            lore.add("");
+            lore.add(translations.getMessage("gui.preferences.toggle.permission-required-supremo"));
+        }
+        ItemStack item = new ItemBuilder(Material.NAME_TAG).setName(name).setLore(lore).hideFlags().build();
+        return new GuiItem(item);
+    }
+
     private GuiItem createToggleItem(boolean isEnabled, String preferenceName, boolean hasPermission) {
         String name = isEnabled ? "&cDesativar" : "&aAtivar";
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
-
         ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
-
-        return new GuiItem(item, event -> {
-            if (!hasPermission) {
-                CoreAPI.getInstance().getSoundManager().playError(player);
-                return;
-            }
-            sendTogglePreferenceMessage(preferenceName);
-        });
+        return new GuiItem(item, event -> sendTogglePreferenceMessage(preferenceName, hasPermission));
     }
 
     private GuiItem createRankupAlertToggleItem(boolean isChatMode) {
         String name = isChatMode ? "&eMudar para Actionbar" : "&eMudar para Chat";
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.toggle.lore");
         Material material = isChatMode ? Material.LIGHT_BLUE_DYE : Material.PINK_DYE;
-
         ItemStack item = new ItemBuilder(material).setName(name).setLore(lore).build();
         return new GuiItem(item, event -> sendTogglePreferenceMessage("RankupAlert"));
     }
@@ -162,13 +188,11 @@ public class RankupPreferencesGUI extends BaseProfileMenuGUI {
     private GuiItem createBackItem() {
         String name = translations.getMessage("gui.rankup-preferences.back-item.name");
         List<String> lore = getLoreFromConfig("gui.rankup-preferences.back-item.lore");
-
         ItemStack item = new ItemBuilder(Material.ARROW)
                 .setName(name)
                 .setLore(lore)
                 .hideFlags()
                 .build();
-
         return new GuiItem(item, event -> {
             CoreAPI.getInstance().getSoundManager().playClick(player);
             new PreferencesGUI(player).open();

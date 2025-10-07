@@ -10,8 +10,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,13 +21,18 @@ import java.util.UUID;
 public class VanishListener implements PluginMessageListener, Listener {
 
     private final Main plugin;
+    // <-- ADICIONADO: Lista local para saber quem está em vanish
     private final Set<UUID> vanishedPlayers = Collections.synchronizedSet(new HashSet<>());
     private static final String VANISH_SEE_PERMISSION = "proxy.moderator";
-
     private boolean initialSyncRequested = false;
 
     public VanishListener(Main plugin) {
         this.plugin = plugin;
+    }
+
+    // <-- ADICIONADO: Método público para outros listeners verificarem o status
+    public boolean isVanished(UUID uuid) {
+        return vanishedPlayers.contains(uuid);
     }
 
     @Override
@@ -52,21 +57,19 @@ public class VanishListener implements PluginMessageListener, Listener {
             boolean shouldHide = in.readBoolean();
 
             if (shouldHide) {
-                vanishedPlayers.add(targetUuid);
+                vanishedPlayers.add(targetUuid); // <-- ADICIONADO
                 Player target = Bukkit.getPlayer(targetUuid);
                 if (target != null) hidePlayerFromServer(target);
             } else {
-                vanishedPlayers.remove(targetUuid);
+                vanishedPlayers.remove(targetUuid); // <-- ADICIONADO
                 Player target = Bukkit.getPlayer(targetUuid);
                 if (target != null) showPlayerFromServer(target);
             }
         } else {
             UUID viewerUuid = UUID.fromString(in.readUTF());
             UUID targetUuid = UUID.fromString(in.readUTF());
-
             Player viewer = Bukkit.getPlayer(viewerUuid);
             Player target = Bukkit.getPlayer(targetUuid);
-
             if (viewer != null && target != null && !viewer.hasPermission(VANISH_SEE_PERMISSION)) {
                 viewer.hidePlayer(plugin, target);
             }
@@ -83,13 +86,13 @@ public class VanishListener implements PluginMessageListener, Listener {
                 requestVanishSync(joinedPlayer);
             }
         }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> updatePlayerView(joinedPlayer), 10L);
+    }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updatePlayerView(joinedPlayer);
-            }
-        }.runTaskLater(plugin, 10L);
+    // <-- ADICIONADO: Limpa o status de vanish quando o jogador sai
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        vanishedPlayers.remove(event.getPlayer().getUniqueId());
     }
 
     private void requestVanishSync(Player p) {
@@ -100,7 +103,6 @@ public class VanishListener implements PluginMessageListener, Listener {
 
     private void updatePlayerView(Player viewer) {
         if (viewer == null || !viewer.isOnline()) return;
-
         if (!viewer.hasPermission(VANISH_SEE_PERMISSION)) {
             for (UUID vanishedUuid : vanishedPlayers) {
                 Player vanishedPlayer = Bukkit.getPlayer(vanishedUuid);

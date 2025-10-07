@@ -46,39 +46,38 @@ public class PlayerDataManager implements Listener {
         CompletableFuture<Document> profileFuture = CoreAPI.getInstance().getUserProfileReader().findUserByUUIDAsync(uuid);
         CompletableFuture<Document> preferencesFuture = CoreAPI.getInstance().getUserPreferenceReader().getPreferencesAsDocumentAsync(uuid);
         CompletableFuture<PlayerManager.PlayerDisplayInfo> displayInfoFuture = CoreAPI.getInstance().getPlayerManager().getPlayerDisplayInfo(uuid);
-        CompletableFuture<Boolean> lightFuture = CoreAPI.getInstance().getUserPreferenceReader().hasRankupPersonalLight(uuid);
-        CompletableFuture<Boolean> coinsFuture = CoreAPI.getInstance().getUserPreferenceReader().canReceiveCoins(uuid);
-        CompletableFuture<Boolean> lobbyFlyFuture = CoreAPI.getInstance().getUserPreferenceReader().hasLobbyFly(uuid);
 
-        CompletableFuture.allOf(profileFuture, preferencesFuture, displayInfoFuture, lightFuture, coinsFuture, lobbyFlyFuture).thenAccept(v -> {
+        CompletableFuture.allOf(profileFuture, preferencesFuture, displayInfoFuture).thenAccept(v -> {
             Document profileDoc = profileFuture.join();
             Document prefsDoc = preferencesFuture.join();
             PlayerManager.PlayerDisplayInfo displayInfo = displayInfoFuture.join();
-            boolean hasPersonalLight = lightFuture.join();
-            boolean canReceiveCoins = coinsFuture.join();
-            boolean hasLobbyFly = lobbyFlyFuture.join();
 
             if (profileDoc == null) {
                 plugin.getLogger().severe("Falha crítica ao carregar UserProfile para " + player.getName());
                 return;
             }
 
-            long cash = profileDoc.get("cash", 0L);
             long id = profileDoc.getLong("_id");
             String username = profileDoc.getString("username");
             Date firstLogin = profileDoc.getDate("first_login");
             Date lastLogin = profileDoc.getDate("last_login");
+            long cash = profileDoc.get("cash", 0L);
 
             boolean lobbyProtection = prefsDoc.getBoolean("lobby_protection_status", true);
             boolean privateMessages = prefsDoc.getBoolean("private_messages_status", true);
+            boolean coinsReceipt = prefsDoc.getBoolean("coins_receipt_status", true);
             boolean rankupConfirmation = prefsDoc.getBoolean("rankup_confirmation_status", true);
             boolean rankupAlerts = prefsDoc.getBoolean("rankup_alert_status", true);
-            String lobbyTimePreference = prefsDoc.getString("lobby_time_preference");
+            boolean personalLight = prefsDoc.getBoolean("rankup_personal_light_status", false);
+            boolean lobbyFly = prefsDoc.getBoolean("lobby_fly_status", false);
+            String lobbyTime = prefsDoc.getString("lobby_time_preference");
+            boolean showRankPrefix = prefsDoc.getBoolean("show_rank_prefix", true);
 
             RealmPlayer realmPlayer = new RealmPlayer(id, uuid, username, firstLogin, lastLogin,
-                    lobbyProtection, privateMessages, canReceiveCoins, displayInfo.groupName(), displayInfo.prefix(),
+                    lobbyProtection, privateMessages, coinsReceipt, displayInfo.groupName(), displayInfo.prefix(),
                     displayInfo.weight(), rankupConfirmation, rankupAlerts,
-                    hasPersonalLight, hasLobbyFly, cash, lobbyTimePreference);
+                    personalLight, lobbyFly, cash, lobbyTime,
+                    showRankPrefix);
 
             playerDataCache.put(uuid, realmPlayer);
             plugin.getLogger().info("Perfil de " + username + " (ID: " + id + ") carregado e cacheado com sucesso.");

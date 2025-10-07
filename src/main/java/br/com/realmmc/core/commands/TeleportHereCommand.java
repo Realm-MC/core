@@ -1,5 +1,6 @@
 package br.com.realmmc.core.commands;
 
+import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.PlayerResolver;
 import org.bukkit.Bukkit;
@@ -16,7 +17,13 @@ import java.util.stream.Collectors;
 
 public class TeleportHereCommand implements CommandExecutor, TabCompleter {
 
+    private final Main plugin; // <-- ADICIONADO
     private final PlayerResolver resolver = new PlayerResolver();
+
+    // <-- ADICIONADO
+    public TeleportHereCommand(Main plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -36,25 +43,34 @@ public class TeleportHereCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        resolver.resolve(sender, args[0], resolvedPlayer -> {
-            if (!resolvedPlayer.isOnline()) {
-                CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
-                CoreAPI.getInstance().getSoundManager().playError(player);
-                return;
-            }
-            Player target = resolvedPlayer.getOnlinePlayer().get();
-            if (player.equals(target)) {
-                CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.teleport-here-self");
-                CoreAPI.getInstance().getSoundManager().playError(player);
-                return;
-            }
+        resolver.resolve(sender, args[0], resolvedPlayerOpt -> {
+            // <-- CÓDIGO AGORA DENTRO DO SCHEDULER -->
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (resolvedPlayerOpt.isEmpty()) {
+                    CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-player", "target", args[0]);
+                    CoreAPI.getInstance().getSoundManager().playError(player);
+                    return;
+                }
+                var resolvedPlayer = resolvedPlayerOpt.get();
 
-            target.teleport(player.getLocation());
-            // --- SOM ADICIONADO PARA O JOGADOR QUE FOI PUXADO ---
-            CoreAPI.getInstance().getSoundManager().playTeleport(target);
+                if (!resolvedPlayer.isOnline()) {
+                    CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
+                    CoreAPI.getInstance().getSoundManager().playError(player);
+                    return;
+                }
 
-            CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.success-here", "player", resolvedPlayer.getFormattedName());
-            CoreAPI.getInstance().getSoundManager().playSuccess(player);
+                Player target = resolvedPlayer.getOnlinePlayer().get();
+                if (player.equals(target)) {
+                    CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.teleport-here-self");
+                    CoreAPI.getInstance().getSoundManager().playError(player);
+                    return;
+                }
+
+                target.teleport(player.getLocation());
+                CoreAPI.getInstance().getSoundManager().playTeleport(target);
+                CoreAPI.getInstance().getTranslationsManager().sendMessage(player, "moderation.teleport.success-here", "player", resolvedPlayer.getFormattedName());
+                CoreAPI.getInstance().getSoundManager().playSuccess(player);
+            });
         });
         return true;
     }

@@ -1,5 +1,6 @@
 package br.com.realmmc.core.commands;
 
+import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.PlayerResolver;
 import org.bukkit.Bukkit;
@@ -16,7 +17,13 @@ import java.util.stream.Collectors;
 
 public class FeedCommand implements CommandExecutor, TabCompleter {
 
+    private final Main plugin; // <-- ADICIONADO
     private final PlayerResolver resolver = new PlayerResolver();
+
+    // <-- ADICIONADO
+    public FeedCommand(Main plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -30,29 +37,38 @@ public class FeedCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        resolver.resolve(sender, args[0], resolvedPlayer -> {
-            // --- CORREÇÃO: Verifica se o alvo é o próprio executor ---
-            if (sender instanceof Player && sender.equals(resolvedPlayer.getOnlinePlayer().orElse(null))) {
-                handleSelfFeed(sender);
-                return;
-            }
+        resolver.resolve(sender, args[0], resolvedPlayerOpt -> {
+            // <-- CÓDIGO AGORA DENTRO DO SCHEDULER -->
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (resolvedPlayerOpt.isEmpty()) {
+                    CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-player", "target", args[0]);
+                    if(sender instanceof Player) CoreAPI.getInstance().getSoundManager().playError((Player) sender);
+                    return;
+                }
+                var resolvedPlayer = resolvedPlayerOpt.get();
 
-            if (!resolvedPlayer.isOnline()) {
-                CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
-                CoreAPI.getInstance().getSoundManager().playError(sender instanceof Player ? (Player) sender : null);
-                return;
-            }
+                if (sender instanceof Player && sender.equals(resolvedPlayer.getOnlinePlayer().orElse(null))) {
+                    handleSelfFeed(sender);
+                    return;
+                }
 
-            Player target = resolvedPlayer.getOnlinePlayer().get();
-            feedPlayer(target);
+                if (!resolvedPlayer.isOnline()) {
+                    CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
+                    if(sender instanceof Player) CoreAPI.getInstance().getSoundManager().playError((Player) sender);
+                    return;
+                }
 
-            CoreAPI.getInstance().getTranslationsManager().sendMessage(target, "moderation.feed.success-target");
-            CoreAPI.getInstance().getSoundManager().playSuccess(target);
+                Player target = resolvedPlayer.getOnlinePlayer().get();
+                feedPlayer(target);
 
-            CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "moderation.feed.success-other", "player", resolvedPlayer.getFormattedName());
-            if (sender instanceof Player) {
-                CoreAPI.getInstance().getSoundManager().playSuccess((Player) sender);
-            }
+                CoreAPI.getInstance().getTranslationsManager().sendMessage(target, "moderation.feed.success-target");
+                CoreAPI.getInstance().getSoundManager().playSuccess(target);
+
+                CoreAPI.getInstance().getTranslationsManager().sendMessage(sender, "moderation.feed.success-other", "player", resolvedPlayer.getFormattedName());
+                if (sender instanceof Player) {
+                    CoreAPI.getInstance().getSoundManager().playSuccess((Player) sender);
+                }
+            });
         });
 
         return true;

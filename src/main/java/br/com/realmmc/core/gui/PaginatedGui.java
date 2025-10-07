@@ -4,6 +4,7 @@ import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;
@@ -51,18 +52,24 @@ public abstract class PaginatedGui extends Gui {
         CoreAPI.getInstance().getSoundManager().playClick(player);
 
         // 1. Cria o inventário e configura os itens estáticos.
-        this.inventory = plugin.getServer().createInventory(null, getSize(), getTitle());
+        if (this.inventory == null) {
+            // Usa o getTitle() e getSize() da classe filha
+            this.inventory = plugin.getServer().createInventory(this, getSize(), getTitle());
+        }
         setupStaticItems();
 
         // 2. Exibe o menu "esqueleto" para o jogador.
         player.openInventory(this.inventory);
-        CoreAPI.getInstance().getGuiManager().getOpenGuis().put(player.getUniqueId(), this);
+
+        // <-- MUDANÇA: A linha `GuiManager.getOpenGuis().put(...)` foi removida daqui. -->
 
         // 3. Inicia a busca assíncrona pelos itens.
         fetchPageItems().thenAccept(guiItems -> {
             // 4. Quando a busca terminar, popula o inventário na thread principal.
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (CoreAPI.getInstance().getGuiManager().getOpenGuis().get(player.getUniqueId()) == this) {
+                // <-- MUDANÇA: Lógica de verificação moderna e segura -->
+                InventoryHolder currentHolder = player.getOpenInventory().getTopInventory().getHolder();
+                if (currentHolder == this) {
                     populateItems(guiItems);
                 }
             });
@@ -80,17 +87,15 @@ public abstract class PaginatedGui extends Gui {
 
     /**
      * Popula o inventário com os itens buscados e adiciona os botões de navegação.
-     * Este método é 'protected' para permitir que subclasses (como RanksGUI) o customizem.
      */
     protected void populateItems(List<GuiItem> allItems) {
-        // Limpa os slots de itens para remover placeholders (ex: "Carregando...")
         for (int slot : itemSlots) {
             inventory.setItem(slot, null);
         }
 
         if (allItems == null || allItems.isEmpty()) {
-            displayEmptyMessage(); // Chama o método para exibir a mensagem de vazio
-            addPageNavigation(Collections.emptyList()); // Adiciona navegação mesmo se vazio (para o botão "voltar")
+            displayEmptyMessage();
+            addPageNavigation(Collections.emptyList());
             return;
         }
 

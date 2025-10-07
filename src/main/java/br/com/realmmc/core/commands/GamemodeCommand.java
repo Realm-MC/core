@@ -1,5 +1,6 @@
 package br.com.realmmc.core.commands;
 
+import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.utils.PlayerResolver;
 import org.bukkit.Bukkit;
@@ -19,9 +20,15 @@ import java.util.stream.Stream;
 
 public class GamemodeCommand implements CommandExecutor, TabCompleter {
 
+    private final Main plugin; // <-- ADICIONADO
     private final PlayerResolver resolver = new PlayerResolver();
     private static final String PERM_SELF = "proxy.administrator";
     private static final String PERM_OTHER = "proxy.manager";
+
+    // <-- ADICIONADO
+    public GamemodeCommand(Main plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -56,12 +63,20 @@ public class GamemodeCommand implements CommandExecutor, TabCompleter {
                 sendNoPermissionMessageForOther(sender);
                 return true;
             }
-            resolver.resolve(sender, args[1], resolvedPlayer -> {
-                if (!resolvedPlayer.isOnline()) {
-                    sendError(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
-                    return;
-                }
-                applyAndNotify(sender, resolvedPlayer.getOnlinePlayer().get(), gameMode);
+            resolver.resolve(sender, args[1], resolvedPlayerOpt -> {
+                // <-- CÓDIGO AGORA DENTRO DO SCHEDULER -->
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    if (resolvedPlayerOpt.isEmpty()) {
+                        sendError(sender, "general.invalid-player", "target", args[1]);
+                        return;
+                    }
+                    var resolvedPlayer = resolvedPlayerOpt.get();
+                    if (!resolvedPlayer.isOnline()) {
+                        sendError(sender, "general.invalid-offline", "target", resolvedPlayer.getFormattedName());
+                        return;
+                    }
+                    applyAndNotify(sender, resolvedPlayer.getOnlinePlayer().get(), gameMode);
+                });
             });
             return true;
         }
@@ -90,7 +105,6 @@ public class GamemodeCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    // --- MÉTODO ATUALIZADO PARA MOSTRAR A MENSAGEM CORRETA ---
     private void sendUsage(CommandSender sender) {
         if (sender.hasPermission(PERM_OTHER)) {
             sendError(sender, "moderation.gamemode.usage-manager");

@@ -3,13 +3,12 @@ package br.com.realmmc.core.managers;
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.api.CoreAPI;
 import br.com.realmmc.core.task.CooldownTask;
-import org.bukkit.Location;
+import org.bukkit.Bukkit; // IMPORT ADICIONADO
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +51,11 @@ public class CooldownManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         if (hasCooldown(event.getPlayer().getUniqueId())) {
-            cancelCooldown(event.getPlayer().getUniqueId());
+            // Apenas remove a tarefa, sem enviar mensagem de cancelamento
+            CooldownTask task = activeCooldowns.remove(event.getPlayer().getUniqueId());
+            if (task != null && !task.isCancelled()) {
+                task.cancel();
+            }
         }
     }
 
@@ -63,14 +66,22 @@ public class CooldownManager implements Listener {
     public void cancelCooldown(UUID uuid) {
         CooldownTask task = activeCooldowns.get(uuid);
         if (task != null) {
-            task.customCancel(); // Usamos um método customizado para diferenciar de cancelamento por fim
+            // --- LÓGICA DE NOTIFICAÇÃO ADICIONADA AQUI ---
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                // Pega a mensagem do arquivo de tradução do Core
+                String message = CoreAPI.getInstance().getTranslationsManager().getMessage("general.cooldown-cancelled-teleport");
+                // Envia a mensagem para a ActionBar do jogador
+                CoreAPI.getInstance().getActionBarManager().setMessage(player, ActionBarManager.MessagePriority.HIGH, "teleport_cancelled", message, 3);
+                // Toca o som de erro
+                CoreAPI.getInstance().getSoundManager().playError(player);
+            }
+            // --- FIM DA NOVA LÓGICA ---
+
+            task.customCancel(); // Continua chamando o método para executar o onCancel e cancelar a tarefa
         }
     }
 
-    /**
-     * MÉTODO ADICIONADO: Usado pela CooldownTask para se remover da lista quando
-     * o tempo acaba ou o jogador desloga.
-     */
     public void removeCooldown(UUID uuid) {
         activeCooldowns.remove(uuid);
     }

@@ -24,12 +24,14 @@ public class RealmPlayer {
     private long cash;
     private double balance;
     private String lobbyTimePreference;
+    private boolean showRankPrefix; // NOVO CAMPO
 
     public RealmPlayer(long id, UUID uuid, String username, Date firstLogin, Date lastLogin,
                        boolean lobbyProtectionEnabled, boolean privateMessagesEnabled, boolean coinsReceiptEnabled,
                        String primaryGroup, String prefix, int groupWeight,
                        boolean needsRankupConfirmation, boolean prefersChatRankupAlerts,
-                       boolean hasPersonalLight, boolean lobbyFlyEnabled, long cash, String lobbyTimePreference) {
+                       boolean hasPersonalLight, boolean lobbyFlyEnabled, long cash, String lobbyTimePreference,
+                       boolean showRankPrefix) { // NOVO PARÂMETRO
         this.id = id;
         this.uuid = uuid;
         this.username = username;
@@ -48,6 +50,7 @@ public class RealmPlayer {
         this.cash = cash;
         this.balance = 0.0;
         this.lobbyTimePreference = lobbyTimePreference;
+        this.showRankPrefix = showRankPrefix; // NOVO
     }
 
     public long getId() { return id; }
@@ -68,6 +71,7 @@ public class RealmPlayer {
     public long getCash() { return cash; }
     public double getBalance() { return balance; }
     public String getLobbyTimePreference() { return lobbyTimePreference; }
+    public boolean isShowRankPrefixEnabled() { return showRankPrefix; } // NOVO GETTER
 
     public void setBalance(double balance) { this.balance = balance; }
     public void setCash(long cash) { this.cash = cash; }
@@ -79,4 +83,5 @@ public class RealmPlayer {
     public void setHasPersonalLight(boolean hasPersonalLight) { this.hasPersonalLight = hasPersonalLight; }
     public void setLobbyFlyEnabled(boolean lobbyFlyEnabled) { this.lobbyFlyEnabled = lobbyFlyEnabled; }
     public void setLobbyTimePreference(String lobbyTimePreference) { this.lobbyTimePreference = lobbyTimePreference; }
+    public void setShowRankPrefixEnabled(boolean showRankPrefix) { this.showRankPrefix = showRankPrefix; } // NOVO SETTER
 }

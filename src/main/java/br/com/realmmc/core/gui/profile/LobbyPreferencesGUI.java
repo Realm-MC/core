@@ -1,6 +1,7 @@
 package br.com.realmmc.core.gui.profile;
 
 import br.com.realmmc.core.api.CoreAPI;
+import br.com.realmmc.core.gui.GuiItem;
 import br.com.realmmc.core.player.RealmPlayer;
 import br.com.realmmc.core.utils.ItemBuilder;
 import br.com.realmmc.core.utils.Permissions;
@@ -8,6 +9,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -81,7 +83,7 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
             lore.add(translations.getRawMessage("gui.lobby-preferences.permission-required"));
         }
 
-        setItem(slot(3, 2), new ItemBuilder(Material.IRON_DOOR).setName(name).setLore(lore).build());
+        setItem(slot(3, 2), new ItemBuilder(Material.IRON_DOOR).setName(name).setLore(lore).hideFlags(ItemFlag.HIDE_ATTRIBUTES).build());
 
         String toggleName = translations.getRawMessage("gui.lobby-preferences.toggle-names." + (isEnabled ? "deactivate" : "activate"));
         Material toggleMat = isEnabled ? Material.LIME_DYE : Material.GRAY_DYE;
@@ -130,51 +132,64 @@ public class LobbyPreferencesGUI extends BaseProfileMenuGUI {
         String currentPref = realmPlayer.getLobbyTimePreference();
         String safePref = (currentPref == null) ? "CICLO" : currentPref;
 
-        String status;
+        String statusText;
         Material nextMaterial;
         String nextName;
 
         switch (safePref.toUpperCase()) {
-            case "DIA":
-                status = translations.getRawMessage("gui.lobby-preferences.time-item.status-day");
+            case "DIA" -> {
+                statusText = translations.getRawMessage("gui.lobby-preferences.time-item.status-day");
                 nextMaterial = Material.ORANGE_DYE;
                 nextName = translations.getRawMessage("gui.lobby-preferences.time-toggle-item.name-to-afternoon");
-                break;
-            case "TARDE":
-                status = translations.getRawMessage("gui.lobby-preferences.time-item.status-afternoon");
+            }
+            case "TARDE" -> {
+                statusText = translations.getRawMessage("gui.lobby-preferences.time-item.status-afternoon");
                 nextMaterial = Material.BLUE_DYE;
                 nextName = translations.getRawMessage("gui.lobby-preferences.time-toggle-item.name-to-night");
-                break;
-            case "NOITE":
-                status = translations.getRawMessage("gui.lobby-preferences.time-item.status-night");
+            }
+            case "NOITE" -> {
+                statusText = translations.getRawMessage("gui.lobby-preferences.time-item.status-night");
                 nextMaterial = Material.LIME_DYE;
                 nextName = translations.getRawMessage("gui.lobby-preferences.time-toggle-item.name-to-cycle");
-                break;
-            case "CICLO":
-            default:
-                status = translations.getRawMessage("gui.lobby-preferences.time-item.status-cycle");
+            }
+            default -> { // CICLO
+                statusText = translations.getRawMessage("gui.lobby-preferences.time-item.status-cycle");
                 nextMaterial = Material.LIGHT_BLUE_DYE;
                 nextName = translations.getRawMessage("gui.lobby-preferences.time-toggle-item.name-to-day");
-                break;
+            }
         }
 
         List<String> displayLore = new ArrayList<>(getLoreFromConfig("gui.lobby-preferences.time-item.lore"));
-        displayLore.add(translations.getRawMessage("gui.lobby-preferences.time-item.status-prefix") + status);
+        displayLore.add("");
+        displayLore.add(translations.getRawMessage("gui.lobby-preferences.time-item.status-prefix") + statusText);
 
-        setItem(slot(3, 4), new ItemBuilder(Material.CLOCK).setName(translations.getMessage("gui.lobby-preferences.time-item.name")).setLore(displayLore).build());
+        ItemStack displayItem = new ItemBuilder(Material.CLOCK)
+                .setName(translations.getMessage("gui.lobby-preferences.time-item.name"))
+                .setLore(displayLore)
+                .build();
+        setItem(slot(3, 4), displayItem);
 
-        List<String> toggleLore = getLoreFromConfig("gui.lobby-preferences.time-toggle-item.lore");
-        setItem(slot(4, 4), new ItemBuilder(nextMaterial).setName(nextName).setLore(toggleLore).build(),
-                event -> sendTogglePreferenceMessage("tempo")
-        );
+        List<String> toggleLore = getLoreFromConfig("gui.lobby-preferences.toggle-lore");
+        ItemStack toggleItem = new ItemBuilder(nextMaterial)
+                .setName(nextName)
+                .setLore(toggleLore)
+                .build();
+        // <-- MUDANÇA: Corrigido de "tempo" para a chave correta "LobbyTime" -->
+        setItem(slot(4, 4), toggleItem, event -> sendTogglePreferenceMessage("LobbyTime"));
     }
 
     private void sendTogglePreferenceMessage(String preferenceName) {
         CoreAPI.getInstance().getSoundManager().playSuccess(player);
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("UpdatePreference");
+        out.writeUTF("PreferenceUpdate");
         out.writeUTF(player.getUniqueId().toString());
         out.writeUTF(preferenceName);
+
+        // Para booleanos, enviamos um valor dummy, o proxy irá inverter.
+        if (!preferenceName.equalsIgnoreCase("LobbyTime")) {
+            out.writeBoolean(false);
+        }
+
         player.sendPluginMessage(plugin, "proxy:preference_update", out.toByteArray());
     }
 }

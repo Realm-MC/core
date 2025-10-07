@@ -23,6 +23,7 @@ general:
   cooldown-active-teleport: "&eTeleportando em {time}s... Não se mova!"
   cooldown-cancelled-teleport: "&cTeleporte cancelado, você se moveu!"
   store-url: "https://loja.realmmc.com.br"
+  menu-not-found: "&cO menu {menu_name} não foi encontrado ou não está disponível."
   server-full-chat:
     header: "&c&lREALM MC"
     line1: "&cO servidor {server} está lotado no momento!"
@@ -379,6 +380,7 @@ gui:
         - "&7↓ Preferências"
     toggle:
       permission-required: "&cVocê precisa do grupo &3Campeão &cou superior para alterar."
+      permission-required-supremo: "&cVocê precisa do grupo &4Supremo &cou superior para alterar."
     lobby-prefs-item:
       name: "&aPreferências do Lobby"
       lore:
@@ -445,6 +447,12 @@ gui:
         - ""
       status_actionbar: "&eActionbar"
       status_chat: "&eChat"
+    rank-prefix-item:
+      name: "Exibição do Prefixo de Rank"
+      lore:
+        - "&7Ative ou desative a exibição do seu"
+        - "&7prefixo de rank dentro do RankUP."
+        - ""
     personal-light-item:
       name: "Luz Pessoal"
       lore:
@@ -500,18 +508,18 @@ gui:
       lore:
         - "&7Escolha um período fixo para o"
         - "&7tempo no lobby ou deixe no ciclo completo."
-        - ""
       status-prefix: "&fEstado: "
       status-cycle: "&7Ciclo Completo"
       status-day: "&eDia"
       status-afternoon: "&6Tarde"
       status-night: "&9Noite"
     time-toggle-item:
-      name-to-day: "&eDia"
-      name-to-afternoon: "&6Tarde"
-      name-to-night: "&9Noite"
-      name-to-cycle: "&7Ciclo Completo"
+      name-to-day: "&eMudar para Dia"
+      name-to-afternoon: "&6Mudar para Tarde"
+      name-to-night: "&9Mudar para Noite"
+      name-to-cycle: "&7Mudar para Ciclo Completo"
   chat-preferences:
+    status-line: "&fEstado: {status}"
     title: "Perfil / Preferências / Chat"
     separator-item:
       name: "&7↑ Navegação"
@@ -632,6 +640,9 @@ toggle:
   fly-lobby:
     enabled: "&aModo voar ativado."
     disabled: "&cModo voar desativado."
+  show-rank-prefix:
+    enabled: "&aExibição do prefixo de rank ativada."
+    disabled: "&cExibição do prefixo de rank desativada."
 
 # --- COMANDOS DE MODERAÇÃO (CORE) ---
 moderation:
@@ -683,10 +694,10 @@ lobby:
     invalid-arg: "&cArgumento inválido. Use: /setspawn ou /setspawn limbo:1 ou /setspawn limbo:2"
 
 chat:
+  alert: "&r{player_name}&f: &r{message}"
   format: "&r{player}&f: &r{message}"
   duplicate-message: "&cVocê não pode enviar a mesma mensagem duas vezes seguidas."
   similar-message: "&cEssa mensagem é muito parecida com a anterior."
-  # Novo formato de chat padrão
   default-format:
     part1:
       text: "{player_name}"
@@ -715,58 +726,71 @@ commands:
     permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
   fly:
     permission-error: "&cVocê precisa do grupo Campeão &cou superior para executar este comando."
-  npc:
-    player-only: "&cEste comando só pode ser executado por um jogador."
-    usage: "&cUtilize: /npc <criar|deletar|list|tp|tphere|setskin|setaction|info|togglelook>"
-    create:
-      usage: "&cUse: /npc criar <id> <skin_username> <nome de exibição...>"
-      success: "&aNPC '{id}' criado com sucesso na sua localização com a skin de '{skin}'!"
-      already-exists: "&cJá existe um NPC com o ID '{id}'."
-    delete:
-      usage: "&cUse: /npc deletar <id>"
-      success: "&aNPC '{id}' deletado com sucesso!"
-    tp:
-      usage: "&cUse: /npc tp <id>"
-      success: "&aTeleportado para o NPC '{id}'."
+  banner:
     list:
-      header: "&6Lista de NPCs existentes:"
-      line-format: "&7- &e{id} &f({display_name}&f)"
-      empty: "&cNão há NPCs criados neste servidor."
-    tphere:
-      usage: "&cUse: /npc tphere <id>"
-      success: "&aNPC '{id}' movido para sua localização atual."
-    setskin:
-      usage: "&cUse: /npc setskin <id> <nome_do_jogador>"
-      success: "&aSkin do NPC '{id}' atualizada para a do jogador '{player}'."
-      fail: "&cNão foi possível encontrar a skin do jogador '{player}'."
-    setaction:
-      usage: "&cUse: /npc setaction <id> <TIPO> [argumentos...]"
-      success: "&aAção do NPC '{id}' definida para '{type}' com sucesso!"
-      cleared: "&aAção do NPC '{id}' foi removida com sucesso."
-      invalid-type: "&cTipo de ação inválido. Tipos disponíveis: &f{types}"
-    togglelook:
-      usage: "&cUse: /npc togglelook <id>"
-      enabled: "&aO NPC '{id}' agora irá olhar para os jogadores."
-      disabled: "&cO NPC '{id}' não irá mais olhar para os jogadores."
-    info:
-      header: "&6Informações do NPC: &e{id}"
-      line-name: "&7- Nome de Exibição: &r{display_name}"
-      line-skin: "&7- Skin: &f{skin_owner}"
-      line-location: "&7- Localização: &f{location}"
-      line-action-type: "&7- Tipo de Ação: &f{action_type}"
-      line-action-values: "&7- Argumentos da Ação:"
-      line-action-value-entry: "&f  - {value}"
-      line-no-action: "&7- Ação: &fNenhuma"
+      header: "&6Lista de banners"
+    help:
+      header: "&6Comandos disponíveis para banners"
+      line-format: "&e {usage} &8- &7{description}"
+      footer: "&6OBS.: &7As informações com <> são obrigatórios"
+      subcommands:
+        importar:
+          usage: "/banner importar <id> <ficheiro> <largura> <altura>"
+          description: "Importa e posiciona uma nova imagem de banner."
+        deletar:
+          usage: "/banner deletar <id>"
+          description: "Deleta um banner e sua imagem."
+        list:
+          usage: "/banner list"
+          description: "Lista todos os banners criados."
+        tp:
+          usage: "/banner tp <id>"
+          description: "Teleporta para um banner."
+        addaction:
+          usage: "/banner addaction <id> <clique> <ação> <valor>"
+          description: "Adiciona uma ação a um banner."
+        remaction:
+          usage: "/banner remaction <id> <clique>"
+          description: "Remove uma ação de um banner."
+        info:
+          usage: "/banner info <id>"
+          description: "Mostra informações sobre um banner."
+        reload:
+          usage: "/banner reload"
+          description: "Recarrega a visualização dos banners do ficheiro."
     error:
-      not-found: "&cNão foi encontrado um NPC com o ID '{id}'."
-
-npc-dialogue:
-  janet:
-    line1: '&e[NPC] &bJanet&e: &fOlá &r{player_full_name}&f! Você está no &eLobby Principal&f!'
-    line2: '&e[NPC] &bJanet&e: &fEm frente você poderá entrar nos modos de jogo disponíveis.'
-    line3: '&e[NPC] &bJanet&e: &fOu você pode utilizar a bússola &eseletora de servidores &fe se conectar rapidamente a um modo de jogo.'
-    line4: '&e[NPC] &bJanet&e: &fAinda na sua hotbar, tem o &eseletor de lobbies &f, utilizado para trocar de lobby,'
-    line5: '&e[NPC] &bJanet&e: &fe por fim o &eseu perfil &fonde pode editar as suas &apreferências &fdeixando todo o seu personagem com a sua cara.'
-    line6: '&e[NPC] &bJanet&e: &fNo mesmo lugar você também consegue visualizar as suas &eestatísticas &fe as suas &cpunições &fdo servidor.'
-    line7: '&e[NPC] &bJanet&e: &fCaso goste do servidor e queira ajudar, você pode adquirir um pacote de &bVIP &fe de &6CASH &futilizando &b&n/vip&f para mais informações.'
-    line8: '&e[NPC] &bJanet&e: &fEsse lugar foi feito especialmente para você! Divirta-se.'
+      no-target-block: "&cVocê precisa estar a olhar para um bloco sólido a até 5 blocos de distância."
+      invalid-map-id: "&cO ID do mapa precisa de ser um número."
+      id-exists: "&cJá existe um banner com o ID '{id}'."
+      not-found: "&cNão foi encontrado um banner com o ID '{id}'."
+      invalid-click-type: "&cTipo de clique inválido. Use: LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT, ANY"
+      invalid-action-type: "&cTipo de ação inválida. Use: COMMAND, MESSAGE, OPEN_MENU"
+      invalid-wall-face: "&cVocê precisa estar a olhar para a face de um bloco vertical (uma parede)."
+      invalid-dimensions: "&cLargura e altura devem ser números positivos."
+      image-not-found: "&cFicheiro de imagem não encontrado: {file_name}"
+      image-folder-instruction: "&7Coloque a imagem na pasta 'plugins/Core/images/'"
+      image-conversion-failed: "&cFalha ao converter a imagem. Verifique os logs da consola."
+      no-banners-found: "&cNão foram encontrados banners com a base de ID '{id_base}' para posicionar."
+    success:
+      created: "&aBanner '{id}' criado com sucesso! Use /banner addaction para definir as ações."
+      location-updated: "&aLocalização do banner '{id}' atualizada com sucesso!"
+      deleted: "&aBanner '{id}' deletado com sucesso."
+      action-added: "&aAção adicionada ao banner '{id}' com sucesso!"
+      action-removed: "&aAção do clique {click_type} removida do banner '{id}' com sucesso!"
+      reloaded: "&aBanners visuais recarregados com sucesso!"
+      import-started: "&eA importar e converter a imagem... Isto pode demorar um pouco."
+      import-success: "&aImagem '{file_name}' importada e convertida com sucesso!"
+      import-map-ids-header: "&aIDs de mapa gerados para '{id_base}':"
+      import-map-ids-line: "&7Linha {line_number}: {ids}"
+      import-sub-banners-created: "&aTodos os sub-banners foram criados na base de dados com IDs como '{id_base}_0_0', '{id_base}_0_1' etc."
+      import-next-step: "&7Use '/banner placegrid' para posicionar a imagem no mundo."
+      grid-placed: "&a{count} banners da grelha '{id_base}' foram posicionados e atualizados com sucesso!"
+      teleported: "&aTeleportado para o banner '&e{id}&a' com sucesso."
+    info:
+      header: "&6Informações sobre o Banner &e{id}"
+      image-file: "&f Ficheiro de Imagem: &7{file_name}"
+      dimensions: "&f Dimensões: &7{width}x{height}"
+      location: "&f Localização: &7{world}, {x}, {y}, {z}"
+      actions-header: "&f Ações configuradas:"
+      actions-none: " &7- Nenhuma"
+      actions-line: " &7- &f{click_type} &7-> &e{action_type}: &f'{value}'"

@@ -2,10 +2,8 @@ package br.com.realmmc.core.api;
 
 import br.com.realmmc.core.Main;
 import br.com.realmmc.core.gui.GuiManager;
-import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
-import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.users.GroupInfoReader;
@@ -15,10 +13,6 @@ import br.com.realmmc.core.users.UserPreferenceManager;
 import br.com.realmmc.core.users.UserPreferenceReader;
 import br.com.realmmc.core.utils.PlayerResolver;
 
-/**
- * Ponto de acesso central e estático para os principais managers e serviços do plugin Core.
- * Facilita a integração entre os diferentes módulos da rede.
- */
 public class CoreAPI {
 
     private static CoreAPI instance;
@@ -56,6 +50,5 @@ public class CoreAPI {
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return plugin.getMaintenanceLockdownManager(); }
     public PurchaseHistoryReader getPurchaseHistoryReader() { return plugin.getPurchaseHistoryReader(); }
     public GroupInfoReader getGroupInfoReader() { return plugin.getGroupInfoReader(); }
-    public HologramManager getHologramManager() { return plugin.getHologramManager(); }
-    public NPCManager getNpcManager() { return plugin.getNpcManager(); }
+    public ParticleManager getParticleManager() { return plugin.getParticleManager(); }
 }

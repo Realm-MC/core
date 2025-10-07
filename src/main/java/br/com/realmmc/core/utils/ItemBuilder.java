@@ -1,5 +1,6 @@
 package br.com.realmmc.core.utils;
 
+import org.bukkit.Bukkit; // <-- ADICIONADO
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
@@ -11,9 +12,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Utilitário para criar ItemStacks de forma fluente e limpa.
- */
 public class ItemBuilder {
 
     private final ItemStack itemStack;
@@ -60,7 +58,7 @@ public class ItemBuilder {
 
     public ItemBuilder setOwner(String ownerName) {
         if (this.itemStack.getType() == Material.PLAYER_HEAD && this.itemMeta instanceof SkullMeta skullMeta) {
-            skullMeta.setOwner(ownerName);
+            skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(ownerName));
         }
         return this;
     }

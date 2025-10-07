@@ -1,14 +1,16 @@
 package br.com.realmmc.core;
 
 import br.com.realmmc.core.api.CoreAPI;
+import br.com.realmmc.core.banner.command.BannerCommand;
+import br.com.realmmc.core.banner.listener.BannerListener;
+import br.com.realmmc.core.banner.listener.BannerProtectionListener;
+import br.com.realmmc.core.banner.manager.BannerManager;
 import br.com.realmmc.core.commands.*;
 import br.com.realmmc.core.gui.GuiManager;
-import br.com.realmmc.core.hologram.HologramManager;
 import br.com.realmmc.core.listeners.*;
 import br.com.realmmc.core.managers.*;
 import br.com.realmmc.core.modules.ModuleManager;
 import br.com.realmmc.core.modules.SystemType;
-import br.com.realmmc.core.npc.NPCManager;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
@@ -59,8 +61,9 @@ public final class Main extends JavaPlugin {
     private String serverName;
     private PurchaseHistoryReader purchaseHistoryReader;
     private GroupInfoReader groupInfoReader;
-    private HologramManager hologramManager;
-    private NPCManager npcManager;
+    private ParticleManager particleManager;
+    private VanishListener vanishListener;
+    private BannerManager bannerManager;
 
     @Override
     public void onLoad() {
@@ -121,18 +124,29 @@ public final class Main extends JavaPlugin {
         this.maintenanceLockdownManager = new MaintenanceLockdownManager(this);
         this.groupInfoReader = new GroupInfoReader(this);
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
-        this.hologramManager = new HologramManager(this);
-        this.npcManager = new NPCManager(this);
-        this.hologramManager.loadHolograms();
+        this.particleManager = new ParticleManager(this);
+        this.bannerManager = new BannerManager(this);
 
         registerComponents();
         activateDefaultModules();
+
+        // <-- MUDANÇA AQUI: Tarefa agendada para carregar e criar os banners após os mundos carregarem -->
+        getServer().getScheduler().runTaskLater(this, () -> {
+            getLogger().info("[DEBUG] A carregar os banners após um atraso de 5 segundos...");
+            if (this.bannerManager != null) {
+                this.bannerManager.loadBanners();
+                this.bannerManager.spawnAllBanners();
+            }
+        }, 100L); // Atraso de 5 segundos (20 ticks * 5)
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
 
     @Override
     public void onDisable() {
+        if (this.bannerManager != null) {
+            this.bannerManager.despawnAllBanners();
+        }
         if (this.maintenanceLockdownManager != null) {
             this.maintenanceLockdownManager.stopActionBarTask(true);
             this.maintenanceLockdownManager.stopActionBarTask(false);
@@ -171,42 +185,45 @@ public final class Main extends JavaPlugin {
     private void registerComponents() {
         PluginManager pm = getServer().getPluginManager();
 
-        VanishListener vanishListener = new VanishListener(this);
+        this.vanishListener = new VanishListener(this);
         MaintenanceLockdownListener maintenanceListener = new MaintenanceLockdownListener(this);
         pm.registerEvents(new PlayerListener(this), this);
-        pm.registerEvents(vanishListener, this);
+        pm.registerEvents(this.vanishListener, this);
+        pm.registerEvents(new VanishInteractionListener(this), this);
         pm.registerEvents(this.godManager, this);
         pm.registerEvents(maintenanceListener, this);
+        pm.registerEvents(new BannerProtectionListener(this), this);
+        pm.registerEvents(new BannerListener(this), this);
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
-        GamemodeCommand gamemodeCommand = new GamemodeCommand();
+        GamemodeCommand gamemodeCommand = new GamemodeCommand(this);
         PluginCommand gamemode = Objects.requireNonNull(getCommand("gamemode"));
         gamemode.setExecutor(gamemodeCommand);
         gamemode.setTabCompleter(gamemodeCommand);
-        HealCommand healCommand = new HealCommand();
+        HealCommand healCommand = new HealCommand(this);
         Objects.requireNonNull(getCommand("heal")).setExecutor(healCommand);
         Objects.requireNonNull(getCommand("heal")).setTabCompleter(healCommand);
-        FeedCommand feedCommand = new FeedCommand();
+        FeedCommand feedCommand = new FeedCommand(this);
         Objects.requireNonNull(getCommand("feed")).setExecutor(feedCommand);
         Objects.requireNonNull(getCommand("feed")).setTabCompleter(feedCommand);
-        TeleportCommand teleportCommand = new TeleportCommand();
+        TeleportCommand teleportCommand = new TeleportCommand(this);
         Objects.requireNonNull(getCommand("tp")).setExecutor(teleportCommand);
         Objects.requireNonNull(getCommand("tp")).setTabCompleter(teleportCommand);
-        TeleportHereCommand teleportHereCommand = new TeleportHereCommand();
+        TeleportHereCommand teleportHereCommand = new TeleportHereCommand(this);
         Objects.requireNonNull(getCommand("tphere")).setExecutor(teleportHereCommand);
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
 
-        NpcCommand npcExecutor = new NpcCommand();
-        PluginCommand npcCommand = Objects.requireNonNull(getCommand("npc"));
-        npcCommand.setExecutor(npcExecutor);
-        npcCommand.setTabCompleter(npcExecutor);
+        BannerCommand bannerExecutor = new BannerCommand(this.bannerManager);
+        PluginCommand bannerCmd = Objects.requireNonNull(getCommand("banner"));
+        bannerCmd.setExecutor(bannerExecutor);
+        bannerCmd.setTabCompleter(bannerExecutor);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:teleport", new TeleportListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sounds", new SoundListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:actionbar", new ActionBarListener(this));
-        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:vanish", vanishListener);
-        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sync", vanishListener);
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:vanish", this.vanishListener);
+        getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:sync", this.vanishListener);
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:preference_update", new PreferenceUpdateListener());
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:opengui", new OpenGuiListener(this));
         getServer().getMessenger().registerIncomingPluginChannel(this, "proxy:broadcast", new TitleBroadcastListener(this));
@@ -252,6 +269,7 @@ public final class Main extends JavaPlugin {
         }
     }
 
+    // Getters
     public String getServerName() { return serverName; }
     public LuckPerms getLuckPerms() { return luckPerms; }
     public ViaAPI<?> getViaAPI() { return viaAPI; }
@@ -278,6 +296,7 @@ public final class Main extends JavaPlugin {
     public MaintenanceLockdownManager getMaintenanceLockdownManager() { return maintenanceLockdownManager; }
     public PurchaseHistoryReader getPurchaseHistoryReader() { return purchaseHistoryReader; }
     public GroupInfoReader getGroupInfoReader() { return groupInfoReader; }
-    public HologramManager getHologramManager() { return hologramManager; }
-    public NPCManager getNpcManager() { return npcManager; }
+    public ParticleManager getParticleManager() { return particleManager; }
+    public VanishListener getVanishListener() { return this.vanishListener; }
+    public BannerManager getBannerManager() { return bannerManager; }
 }

@@ -10,6 +10,9 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,15 +58,16 @@ public class PreferenceUpdateListener implements PluginMessageListener {
     }
 
     private void sendFeedbackMessage(Player player, String key, boolean newState) {
-        String messageKey = "";
-        switch (key.toLowerCase()) {
-            case "lobbyprotection": messageKey = newState ? "toggle.lobby-protection.enabled" : "toggle.lobby-protection.disabled"; break;
-            case "playertell": messageKey = newState ? "toggle.tell.enabled" : "toggle.tell.disabled"; break;
-            case "coinsreceipt": messageKey = newState ? "toggle.coins-receipt.enabled" : "toggle.coins-receipt.disabled"; break;
-            case "rankupconfirmation": messageKey = newState ? "toggle.rankup-confirm.enabled" : "toggle.rankup-confirm.disabled"; break;
-            case "rankupalert": messageKey = newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled"; break;
-            case "rankuppersonallight": messageKey = newState ? "toggle.personal-light.enabled" : "toggle.personal-light.disabled"; break;
-        }
+        String messageKey = switch (key.toLowerCase()) {
+            case "lobbyprotection" -> newState ? "toggle.lobby-protection.enabled" : "toggle.lobby-protection.disabled";
+            case "playertell" -> newState ? "toggle.tell.enabled" : "toggle.tell.disabled";
+            case "coinsreceipt" -> newState ? "toggle.coins-receipt.enabled" : "toggle.coins-receipt.disabled";
+            case "rankupconfirmation" -> newState ? "toggle.rankup-confirm.enabled" : "toggle.rankup-confirm.disabled";
+            case "rankupalert" -> newState ? "toggle.rankup-alert.enabled" : "toggle.rankup-alert.disabled";
+            case "rankuppersonallight" -> newState ? "toggle.personal-light.enabled" : "toggle.personal-light.disabled";
+            case "showrankprefix" -> newState ? "toggle.show-rank-prefix.enabled" : "toggle.show-rank-prefix.disabled";
+            default -> "";
+        };
         if (!messageKey.isEmpty()) {
             CoreAPI.getInstance().getTranslationsManager().sendMessage(player, messageKey);
         }
@@ -71,23 +75,29 @@ public class PreferenceUpdateListener implements PluginMessageListener {
 
     private void updateBooleanPreference(RealmPlayer realmPlayer, String key, boolean newState) {
         switch (key.toLowerCase()) {
-            case "lobbyprotection": realmPlayer.setLobbyProtectionEnabled(newState); break;
-            case "playertell": realmPlayer.setPrivateMessagesEnabled(newState); break;
-            case "coinsreceipt": realmPlayer.setCoinsReceiptEnabled(newState); break;
-            case "rankupconfirmation": realmPlayer.setNeedsRankupConfirmation(newState); break;
-            case "rankupalert": realmPlayer.setPrefersChatRankupAlerts(newState); break;
-            case "rankuppersonallight": realmPlayer.setHasPersonalLight(newState); break;
-            case "lobbyfly": realmPlayer.setLobbyFlyEnabled(newState); break;
+            case "lobbyprotection" -> realmPlayer.setLobbyProtectionEnabled(newState);
+            case "playertell" -> realmPlayer.setPrivateMessagesEnabled(newState);
+            case "coinsreceipt" -> realmPlayer.setCoinsReceiptEnabled(newState);
+            case "rankupconfirmation" -> realmPlayer.setNeedsRankupConfirmation(newState);
+            case "rankupalert" -> realmPlayer.setPrefersChatRankupAlerts(newState);
+            case "rankuppersonallight" -> realmPlayer.setHasPersonalLight(newState);
+            case "lobbyfly" -> realmPlayer.setLobbyFlyEnabled(newState);
+            case "showrankprefix" -> realmPlayer.setShowRankPrefixEnabled(newState);
         }
     }
 
     private void refreshOpenGui(Player player) {
-        Gui openGui = CoreAPI.getInstance().getGuiManager().getOpenGuis().get(player.getUniqueId());
+        InventoryView openInventory = player.getOpenInventory();
+        Inventory topInventory = openInventory.getTopInventory();
 
-        if (openGui instanceof LobbyPreferencesGUI ||
-                openGui instanceof ChatPreferencesGUI ||
-                openGui instanceof RankupPreferencesGUI) {
-            Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), openGui::open);
+        if (topInventory != null) {
+            InventoryHolder holder = topInventory.getHolder();
+
+            if (holder instanceof Gui gui) {
+                if (gui instanceof LobbyPreferencesGUI || gui instanceof ChatPreferencesGUI || gui instanceof RankupPreferencesGUI) {
+                    Bukkit.getScheduler().runTask(CoreAPI.getInstance().getPlugin(), gui::open);
+                }
+            }
         }
     }
 }
