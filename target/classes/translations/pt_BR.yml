@@ -794,3 +794,24 @@ commands:
       actions-header: "&f Ações configuradas:"
       actions-none: " &7- Nenhuma"
       actions-line: " &7- &f{click_type} &7-> &e{action_type}: &f'{value}'"
+
+tablist:
+  header:
+    - "&f"
+    - "&f&5&lREALM MC"
+    - "&8realmmc.com.br"
+    - "&7Você está conectado no &a{server_display_name}"
+    - "&f"
+  footer:
+    normal:
+      - "&f"
+      - "&5Fórum: &frealmmc.com.br/forum"
+      - "&5Discord: &fdiscord.realmmc.com.br"
+      - "&f"
+      - "&eAdquira VIP e CASH acessando: &floja.realmmc.com.br"
+    staff:
+      - "&f"
+      - "&8-//--//-"
+      - "&f"
+      - "&5TPS: &7{tps} &8| &5Ping: &7{ping} &8| &5Memória em Uso: &7{memory_usage}"
+      - "&7{online_players} {player_string} conectados neste servidor."
