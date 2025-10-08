@@ -100,7 +100,6 @@ public final class TimeFormatter {
         return String.join(", ", parts) + " e " + lastPart;
     }
 
-    // <-- MÉTODO ADICIONADO DE VOLTA -->
     public static String formatToYml(long millis) {
         if (millis <= 0) return "0s";
         long days = TimeUnit.MILLISECONDS.toDays(millis);

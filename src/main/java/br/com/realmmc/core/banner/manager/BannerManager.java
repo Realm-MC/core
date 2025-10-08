@@ -6,7 +6,6 @@ import br.com.realmmc.core.banner.action.BannerAction;
 import br.com.realmmc.core.banner.action.ClickType;
 import br.com.realmmc.core.banner.model.Banner;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -23,19 +22,24 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BannerManager {
 
     private final Main plugin;
+    private final Logger logger;
     private final File configFile;
     private FileConfiguration config;
     private final Map<String, Banner> bannerCache = new ConcurrentHashMap<>();
@@ -43,6 +47,7 @@ public class BannerManager {
 
     public BannerManager(Main plugin) {
         this.plugin = plugin;
+        this.logger = plugin.getLogger();
         this.configFile = new File(plugin.getDataFolder(), "banners.yml");
         if (!configFile.exists()) {
             try {
@@ -58,7 +63,10 @@ public class BannerManager {
         bannerCache.clear();
         this.config = YamlConfiguration.loadConfiguration(configFile);
         ConfigurationSection section = config.getConfigurationSection("banners");
-        if (section == null) return;
+        if (section == null) {
+            plugin.getLogger().info("Nenhum banner encontrado no banners.yml para carregar.");
+            return;
+        }
 
         for (String id : section.getKeys(false)) {
             try {
@@ -79,7 +87,7 @@ public class BannerManager {
                 int[][] mapIds = gson.fromJson(config.getString(path + ".map-ids"), type);
 
                 if (mapIds == null) {
-                    throw new JsonSyntaxException("O campo 'map-ids' está nulo ou inválido no banner '" + id + "'");
+                    throw new com.google.gson.JsonSyntaxException("O campo 'map-ids' está nulo ou inválido no banner '" + id + "'");
                 }
 
                 Banner banner = new Banner(id, imageFile, width, height, mapIds, loc, face);
@@ -138,73 +146,89 @@ public class BannerManager {
     }
 
     public void spawnAllBanners() {
-        plugin.getLogger().info("Criando entidades dos banners interativos...");
-        for (Banner banner : bannerCache.values()) {
-            Location topLeft = banner.getTopLeftLocation();
-            if (topLeft.getWorld() == null) {
-                plugin.getLogger().warning("Mundo do banner '" + banner.getId() + "' não encontrado. O banner não será criado.");
-                continue;
+        logger.info("Agendando criação faseada das entidades dos banners...");
+
+        List<Banner> bannersToSpawn = new ArrayList<>(bannerCache.values());
+
+        new BukkitRunnable() {
+            private int index = 0;
+
+            @Override
+            public void run() {
+                if (index >= bannersToSpawn.size()) {
+                    logger.info("Criação faseada dos banners concluída.");
+                    this.cancel();
+                    return;
+                }
+
+                Banner banner = bannersToSpawn.get(index);
+                spawnSingleBannerGrid(banner);
+                index++;
             }
-            Location blockLoc = new Location(topLeft.getWorld(), topLeft.getBlockX(), topLeft.getBlockY(), topLeft.getBlockZ());
-            if (!blockLoc.getChunk().isLoaded()) {
-                blockLoc.getChunk().load();
-            }
+        }.runTaskTimer(plugin, 0L, 20L);
+    }
 
-            BlockFace facing = banner.getFacing();
-            BlockFace rightDir, downDir;
-            downDir = BlockFace.DOWN;
+    private void spawnSingleBannerGrid(Banner banner) {
+        Location topLeft = banner.getTopLeftLocation();
+        if (topLeft.getWorld() == null) return;
 
-            switch (facing) {
-                case NORTH: rightDir = BlockFace.WEST; break;
-                case SOUTH: rightDir = BlockFace.EAST; break;
-                case WEST: rightDir = BlockFace.SOUTH; break;
-                case EAST: rightDir = BlockFace.NORTH; break;
-                default: continue;
-            }
+        BlockFace facing = banner.getFacing();
+        BlockFace rightDir, downDir;
+        downDir = BlockFace.DOWN;
 
-            for (int y = 0; y < banner.getHeight(); y++) {
-                for (int x = 0; x < banner.getWidth(); x++) {
-                    Location partLocation = topLeft.getBlock().getRelative(rightDir, x).getRelative(downDir, y).getLocation();
+        switch (facing) {
+            case NORTH: rightDir = BlockFace.WEST; break;
+            case SOUTH: rightDir = BlockFace.EAST; break;
+            case WEST: rightDir = BlockFace.SOUTH; break;
+            case EAST: rightDir = BlockFace.NORTH; break;
+            default: return;
+        }
 
-                    boolean alreadyExists = false;
-                    for (Entity entity : partLocation.getChunk().getEntities()) {
-                        if (entity instanceof ItemFrame && entity.getLocation().getBlock().equals(partLocation.getBlock())) {
-                            if (entity.hasMetadata("realm_banner_id") && entity.getMetadata("realm_banner_id").get(0).asString().equals(banner.getId())) {
-                                alreadyExists = true;
-                                break;
-                            }
+        for (int y = 0; y < banner.getHeight(); y++) {
+            for (int x = 0; x < banner.getWidth(); x++) {
+                Location partLocation = topLeft.getBlock().getRelative(rightDir, x).getRelative(downDir, y).getLocation();
+
+                if (!partLocation.getChunk().isLoaded()) {
+                    partLocation.getChunk().load();
+                }
+
+                boolean alreadyExists = false;
+                for (Entity entity : partLocation.getChunk().getEntities()) {
+                    if (entity instanceof ItemFrame && entity.getLocation().getBlock().equals(partLocation.getBlock())) {
+                        if (entity.hasMetadata("realm_banner_id") && entity.getMetadata("realm_banner_id").get(0).asString().equals(banner.getId())) {
+                            alreadyExists = true;
+                            break;
                         }
                     }
-
-                    if (alreadyExists) continue;
-
-                    final int currentX = x;
-                    final int currentY = y;
-
-                    partLocation.getWorld().spawn(partLocation, ItemFrame.class, frame -> {
-                        frame.setFacingDirection(facing, true);
-                        frame.setVisible(false);
-                        frame.setInvulnerable(true);
-                        frame.setFixed(true);
-
-                        int mapId = banner.getMapIds()[currentY][currentX];
-                        MapView mapView = Bukkit.getMap(mapId);
-
-                        if (mapView == null) {
-                            frame.setItem(new ItemStack(Material.PAPER));
-                        } else {
-                            ItemStack mapItem = new ItemStack(Material.FILLED_MAP);
-                            MapMeta meta = (MapMeta) mapItem.getItemMeta();
-                            meta.setMapView(mapView);
-                            mapItem.setItemMeta(meta);
-                            frame.setItem(mapItem);
-                        }
-                        frame.setMetadata("realm_banner_id", new FixedMetadataValue(plugin, banner.getId()));
-                    });
                 }
+
+                if (alreadyExists) continue;
+
+                final int currentX = x;
+                final int currentY = y;
+
+                partLocation.getWorld().spawn(partLocation, ItemFrame.class, frame -> {
+                    frame.setFacingDirection(facing, true);
+                    frame.setVisible(false);
+                    frame.setInvulnerable(true);
+                    frame.setFixed(true);
+
+                    int mapId = banner.getMapIds()[currentY][currentX];
+                    MapView mapView = Bukkit.getMap(mapId);
+
+                    if (mapView == null) {
+                        frame.setItem(new ItemStack(Material.PAPER));
+                    } else {
+                        ItemStack mapItem = new ItemStack(Material.FILLED_MAP);
+                        MapMeta meta = (MapMeta) mapItem.getItemMeta();
+                        meta.setMapView(mapView);
+                        mapItem.setItemMeta(meta);
+                        frame.setItem(mapItem);
+                    }
+                    frame.setMetadata("realm_banner_id", new FixedMetadataValue(plugin, banner.getId()));
+                });
             }
         }
-        plugin.getLogger().info("Entidades dos banners criadas.");
     }
 
     public void despawnAllBanners() {

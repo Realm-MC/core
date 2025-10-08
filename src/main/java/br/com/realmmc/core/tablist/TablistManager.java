@@ -31,7 +31,8 @@ public class TablistManager {
                     updateTablist(player);
                 }
             }
-        }.runTaskTimerAsynchronously(plugin, 0L, 40L); // Atualiza a cada 2 segundos
+            // A correção está aqui: usamos `runTaskTimer` para executar na thread principal.
+        }.runTaskTimer(plugin, 0L, 40L);
     }
 
     private void updateTablist(Player player) {
@@ -63,7 +64,7 @@ public class TablistManager {
         int ping = player.getPing();
         String pingColor = (ping <= 100) ? "§a" : (ping <= 200) ? "§e" : "§c";
 
-        long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576; // Em MB
+        long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
 
         int onlinePlayers = Bukkit.getOnlinePlayers().size();
         String playerString = (onlinePlayers == 1) ? "jogador" : "jogadores";

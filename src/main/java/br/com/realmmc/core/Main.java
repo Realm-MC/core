@@ -134,7 +134,7 @@ public final class Main extends JavaPlugin {
         registerComponents();
         activateDefaultModules();
 
-        this.tablistManager.start();
+       this.tablistManager.start();
 
         getServer().getScheduler().runTaskLater(this, () -> {
             if (this.bannerManager != null) {
@@ -199,7 +199,6 @@ public final class Main extends JavaPlugin {
         pm.registerEvents(new BannerProtectionListener(this), this);
         pm.registerEvents(new BannerListener(this), this);
         pm.registerEvents(new TablistListener(), this);
-        // <-- MUDANÇA AQUI: A linha `pm.registerEvents(new PreferenceUpdateListener(), this);` foi removida -->
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand(this);
