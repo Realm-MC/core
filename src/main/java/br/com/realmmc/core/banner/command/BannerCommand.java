@@ -17,6 +17,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,10 +36,10 @@ public class BannerCommand implements CommandExecutor, TabCompleter {
     private final TranslationsManager translations;
     private final String PERMISSION = "core.manager";
 
-    public BannerCommand(BannerManager bannerManager) {
+    public BannerCommand(BannerManager bannerManager, TranslationsManager translationsManager) {
         this.bannerManager = bannerManager;
         this.imageMapConverter = new ImageMapConverter(CoreAPI.getInstance().getPlugin());
-        this.translations = CoreAPI.getInstance().getTranslationsManager();
+        this.translations = translationsManager;
     }
 
     @Override
@@ -80,16 +81,20 @@ public class BannerCommand implements CommandExecutor, TabCompleter {
         CoreAPI.getInstance().getSoundManager().playError(player);
         player.sendMessage("§f");
         translations.sendMessage(player, "commands.banner.help.header", "system", "Banners");
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.import"), "description", translations.getRawMessage("commands.banner.help.import-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.delete"), "description", translations.getRawMessage("commands.banner.help.delete-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.list"), "description", translations.getRawMessage("commands.banner.help.list-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.tp"), "description", translations.getRawMessage("commands.banner.help.tp-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.addaction"), "description", translations.getRawMessage("commands.banner.help.addaction-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.remaction"), "description", translations.getRawMessage("commands.banner.help.remaction-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.info"), "description", translations.getRawMessage("commands.banner.help.info-desc")));
-        player.sendMessage(translations.getMessage("commands.banner.help.line-format", "command", translations.getRawMessage("commands.banner.help.reload"), "description", translations.getRawMessage("commands.banner.help.reload-desc")));
+
+        ConfigurationSection subcommandsSection = translations.getConfig().getConfigurationSection("commands.banner.help.subcommands");
+        if (subcommandsSection != null) {
+            for (String key : subcommandsSection.getKeys(false)) {
+                String usage = subcommandsSection.getString(key + ".usage");
+                String description = subcommandsSection.getString(key + ".description");
+                if (usage != null && description != null) {
+                    player.sendMessage(translations.getMessage("commands.banner.help.line-format", "usage", usage, "description", description));
+                }
+            }
+        }
+
         player.sendMessage("§f");
-        translations.sendMessage(player, "commands.banner.help.footer-obs");
+        translations.sendMessage(player, "commands.banner.help.footer");
         player.sendMessage("§f");
     }
 
@@ -206,8 +211,8 @@ public class BannerCommand implements CommandExecutor, TabCompleter {
     private void handleAddAction(Player player, String[] args) {
         if (args.length < 5) {
             translations.sendMessage(player, "commands.banner.usage", "usage", "banner addaction <id> <clique> <ação> <valor...>");
-            player.sendMessage("§7Tipos de Clique:§e LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT, ANY");
-            player.sendMessage("§7Tipos de Ação:§e COMMAND, MESSAGE, OPEN_MENU");
+            player.sendMessage("§eTipos de Clique:§7 LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT, ANY");
+            player.sendMessage("§eTipos de Ação:§7 COMMAND, MESSAGE, OPEN_MENU");
             CoreAPI.getInstance().getSoundManager().playError(player);
             return;
         }

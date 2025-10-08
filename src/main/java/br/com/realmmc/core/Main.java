@@ -14,6 +14,8 @@ import br.com.realmmc.core.modules.SystemType;
 import br.com.realmmc.core.player.PlayerManager;
 import br.com.realmmc.core.punishments.PunishmentReader;
 import br.com.realmmc.core.scoreboard.DefaultScoreboardManager;
+import br.com.realmmc.core.tablist.TablistListener;
+import br.com.realmmc.core.tablist.TablistManager;
 import br.com.realmmc.core.users.*;
 import br.com.realmmc.core.utils.PlayerResolver;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -64,6 +66,7 @@ public final class Main extends JavaPlugin {
     private ParticleManager particleManager;
     private VanishListener vanishListener;
     private BannerManager bannerManager;
+    private TablistManager tablistManager;
 
     @Override
     public void onLoad() {
@@ -126,18 +129,19 @@ public final class Main extends JavaPlugin {
         this.purchaseHistoryReader = new PurchaseHistoryReader(this);
         this.particleManager = new ParticleManager(this);
         this.bannerManager = new BannerManager(this);
+        this.tablistManager = new TablistManager(this);
 
         registerComponents();
         activateDefaultModules();
 
-        // <-- MUDANÇA AQUI: Tarefa agendada para carregar e criar os banners após os mundos carregarem -->
+        this.tablistManager.start();
+
         getServer().getScheduler().runTaskLater(this, () -> {
-            getLogger().info("[DEBUG] A carregar os banners após um atraso de 5 segundos...");
             if (this.bannerManager != null) {
                 this.bannerManager.loadBanners();
                 this.bannerManager.spawnAllBanners();
             }
-        }, 100L); // Atraso de 5 segundos (20 ticks * 5)
+        }, 60L);
 
         this.translationsManager.log(Level.INFO, "logs.plugin.enabled");
     }
@@ -194,6 +198,8 @@ public final class Main extends JavaPlugin {
         pm.registerEvents(maintenanceListener, this);
         pm.registerEvents(new BannerProtectionListener(this), this);
         pm.registerEvents(new BannerListener(this), this);
+        pm.registerEvents(new TablistListener(), this);
+        // <-- MUDANÇA AQUI: A linha `pm.registerEvents(new PreferenceUpdateListener(), this);` foi removida -->
 
         Objects.requireNonNull(getCommand("god")).setExecutor(new GodCommand(this.getGodManager()));
         GamemodeCommand gamemodeCommand = new GamemodeCommand(this);
@@ -214,7 +220,7 @@ public final class Main extends JavaPlugin {
         Objects.requireNonNull(getCommand("tphere")).setTabCompleter(teleportHereCommand);
         Objects.requireNonNull(getCommand("perfil")).setExecutor(new ProfileCommand());
 
-        BannerCommand bannerExecutor = new BannerCommand(this.bannerManager);
+        BannerCommand bannerExecutor = new BannerCommand(this.bannerManager, this.translationsManager);
         PluginCommand bannerCmd = Objects.requireNonNull(getCommand("banner"));
         bannerCmd.setExecutor(bannerExecutor);
         bannerCmd.setTabCompleter(bannerExecutor);
@@ -299,4 +305,5 @@ public final class Main extends JavaPlugin {
     public ParticleManager getParticleManager() { return particleManager; }
     public VanishListener getVanishListener() { return this.vanishListener; }
     public BannerManager getBannerManager() { return bannerManager; }
+    public TablistManager getTablistManager() { return tablistManager; }
 }
